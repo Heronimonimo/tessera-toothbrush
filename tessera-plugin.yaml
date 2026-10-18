@@ -1,11 +1,12 @@
 # The manifest: who made the plugin, what it may do, and what the Tessera app shows. No code and no words: every name,
 # label and hint is a key into translations/<language>.json, part "app". docs/MANIFEST.md has every field.
 #
-# The screen reads the toothbrush's own entities itself: the eight inputs below are chosen when the plugin is added to
-# a screen and become ESPHome homeassistant text sensors in plugin.yaml, as plugins/waste_collection does. Nothing is
-# needed in Home Assistant: no template, no helper, no integration of its own.
+# The screen reads the toothbrush's own entities itself. The first input names the brush's main entity, chosen once
+# when the plugin is added to a screen; the component finds the brush's other entities beside it by the names their
+# integration gives them, and the other inputs, all optional, name one of them instead. Nothing is needed in Home
+# Assistant: no template, no helper, no integration of its own.
 id: toothbrush
-version: 0.1.0
+version: 0.2.0
 api: "0.10"
 icon: timer-outline
 maintainer: Heronimonimo
@@ -18,17 +19,26 @@ boards: any
 flash_kb: 22
 
 permissions:
-  read_entities: ["{state}", "{sector}", "{time}", "{battery}", "{pressure}", "{mode}", "{head}", "{last}"]
+  # The toothbrush entity, the inputs that name another, and the entities of the same brush found beside it by name
+  # (<brush> is the toothbrush entity's id without its integration's word for it; brush.cpp, BRANDS).
+  read_entities: ["{toothbrush}", "{sector}", "{time}", "{battery}", "{pressure}", "{mode}", "{head}", "{last}",
+                  "sensor.<brush>_sector", "sensor.<brush>_time", "sensor.<brush>_brushing_time", "sensor.<brush>_timer",
+                  "sensor.<brush>_battery", "sensor.<brush>_pressure", "sensor.<brush>_pressure_state",
+                  "binary_sensor.<brush>_pressing_too_hard", "sensor.<brush>_mode", "sensor.<brush>_brushing_mode",
+                  "select.<brush>_mode", "sensor.<brush>_refill_days", "sensor.<brush>_consumable",
+                  "sensor.<brush>_last_session", "sensor.<brush>_score"]
 
+# Tessera's inputs offer every entity of their domains (an input has no filter by device or integration yet), so the
+# domains are as narrow as the brushes allow, and only the first input is needed.
 inputs:
-  - { id: state, kind: entity, domains: [sensor, binary_sensor], scope: screen, label: in_state, hint: in_state_hint }
-  - { id: sector, kind: entity, domains: [sensor], scope: screen, label: in_sector, hint: in_sector_hint }
-  - { id: time, kind: entity, domains: [sensor], scope: screen, label: in_time, hint: in_time_hint }
-  - { id: battery, kind: entity, domains: [sensor], scope: screen, label: in_battery, hint: in_battery_hint }
-  - { id: pressure, kind: entity, domains: [sensor, binary_sensor], scope: screen, label: in_pressure, hint: in_pressure_hint }
-  - { id: mode, kind: entity, domains: [sensor, select], scope: screen, label: in_mode, hint: in_mode_hint }
+  - { id: toothbrush, kind: entity, domains: [sensor, binary_sensor], scope: screen, label: in_toothbrush, hint: in_toothbrush_hint }
+  - { id: sector, kind: entity, domains: [sensor], scope: screen, label: in_sector, hint: in_override_hint }
+  - { id: time, kind: entity, domains: [sensor], scope: screen, label: in_time, hint: in_override_hint }
+  - { id: battery, kind: entity, domains: [sensor], scope: screen, label: in_battery, hint: in_override_hint }
+  - { id: pressure, kind: entity, domains: [sensor, binary_sensor], scope: screen, label: in_pressure, hint: in_override_hint }
+  - { id: mode, kind: entity, domains: [sensor, select], scope: screen, label: in_mode, hint: in_override_hint }
   - { id: head, kind: entity, domains: [sensor], scope: screen, label: in_head, hint: in_head_hint }
-  - { id: last, kind: entity, domains: [sensor], scope: screen, label: in_last, hint: in_last_hint }
+  - { id: last, kind: entity, domains: [sensor], scope: screen, label: in_last, hint: in_override_hint }
 
 tiles:
   # The brushing zones as a ring of 4 or 6 arcs (the upper jaw above, the lower jaw below) around the time brushed.

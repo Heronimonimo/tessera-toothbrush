@@ -1,6 +1,5 @@
 #pragma once
 #include "esphome/core/component.h"
-#include "esphome/components/text_sensor/text_sensor.h"
 #include "esphome/components/smart_display/plugin_api.h"
 #include <string>
 
@@ -8,7 +7,7 @@ namespace esphome::toothbrush {
 
 // Where a brush stands now, for one tile's options: what its ring and its words show.
 enum class Phase : uint8_t {
-  WAITING,   // no state from Home Assistant yet (or the state input points at nothing)
+  WAITING,   // no state from Home Assistant yet (or the toothbrush input points at nothing)
   OFFLINE,   // the brush is out of reach (unavailable)
   IDLE,      // nothing to show but the readings
   BRUSHING,  // a session runs
@@ -38,23 +37,24 @@ struct Options {
   bool show_name = true;
 };
 
-// The plugin: a tile ("brush") and a card ("zones"). It follows the session itself, from the brush's eight entities,
-// so the tile and the card only paint what it knows, and a tile made again (a page coming back on the CYD) picks up a
-// session where it stands.
+// What the plugin reads of the brush, one entity each (the manifest's inputs, in this order).
+enum Role : uint8_t { STATE, SECTOR, TIME, BATTERY, PRESSURE, MODE, HEAD, LAST, ROLES };
+
+// "1:12": minutes and seconds.
+std::string clock_of(int seconds);
+
+// The plugin: a tile ("brush") and a card ("zones"). It reads the brush's entities from Home Assistant itself: the
+// toothbrush input names the brush's main entity, and the other entities of the same device are found by the names
+// their integration gives them, unless an input names one of them. It follows the session itself, so the tile and the
+// card only paint what it knows, and a tile made again (a page coming back on the CYD) picks up where it stands.
 class Toothbrush : public Component, public tessera::Plugin {
  public:
   void setup() override;
   float get_setup_priority() const override { return setup_priority::DATA; }
   void on_interval(uint32_t now_ms) override;
 
-  void set_state(text_sensor::TextSensor *s) { state_ = s; }
-  void set_sector(text_sensor::TextSensor *s) { sector_ = s; }
-  void set_time(text_sensor::TextSensor *s) { time_ = s; }
-  void set_battery(text_sensor::TextSensor *s) { battery_ = s; }
-  void set_pressure(text_sensor::TextSensor *s) { pressure_ = s; }
-  void set_mode(text_sensor::TextSensor *s) { mode_ = s; }
-  void set_head(text_sensor::TextSensor *s) { head_ = s; }
-  void set_last(text_sensor::TextSensor *s) { last_ = s; }
+  // An entity of an input, from plugin.yaml: "" leaves the role to the one found beside the toothbrush entity.
+  void set_entity(uint8_t role, const char *entity_id);
 
   // Where the brush stands for a tile with these options.
   Reading read(const Options &options) const;
@@ -70,7 +70,23 @@ class Toothbrush : public Component, public tessera::Plugin {
   Options card_options;
 
  protected:
-  text_sensor::TextSensor *state_{}, *sector_{}, *time_{}, *battery_{}, *pressure_{}, *mode_{}, *head_{}, *last_{};
+  // An entity the screen follows, and its last state as Home Assistant sent it. Fixed fields, in the component's own
+  // memory: about 1.2 KB for all of them.
+  struct Source {
+    char entity[80] = "";
+    char state[48] = "";
+    bool heard = false;
+  };
+  Source sources_[ROLES];
+  Source mode_select_;           // Laifen names its mode twice: a select (preferred) beside the sensor
+  bool chosen_[ROLES] = {};      // the role's entity came from an input, not from the toothbrush's name
+
+  // The state of a role: the first of its entities that has a value, else the first that sent anything ("unavailable"),
+  // else "".
+  std::string value(Role role) const;
+  // Find the entities the inputs leave open, and follow every one (in setup(), before Home Assistant connects).
+  void find_siblings();
+  void subscribe();
 
   // The session, followed every 250 ms.
   bool active_ = false;          // a session runs

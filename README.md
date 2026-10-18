@@ -11,19 +11,22 @@ It works with the toothbrushes Home Assistant knows over Bluetooth: Oral-B (`ora
 ## Set up
 
 1. In Tessera, open Plugins, choose **Add with a link** and paste this repository's link.
-2. Tick the screen in the bathroom. Tessera asks for the brush's entities; choose them from the lists:
+2. Tick the screen in the bathroom. Tessera asks for the **Toothbrush**: choose the brush's main entity, and leave the
+   other fields empty. The plugin finds the rest of the brush from it:
 
-   | Asked for | Oral-B | Sonicare | Xiaomi | Laifen |
-   |---|---|---|---|---|
-   | Brushing state | its state sensor | handle state | the toothbrush entity | brushing state |
-   | Zone | sector | sector | leave empty | leave empty |
-   | Brushing time | time | brushing time | leave empty | leave empty |
-   | Battery | battery | battery | battery | battery |
-   | Pressure | pressure | pressure state | leave empty | leave empty |
-   | Mode | mode | brushing mode | leave empty | mode |
-   | Brush head | refill days | brush head wear | consumable | leave empty |
-   | Last session | last session | last session | score | leave empty |
+   | Brush | Choose as Toothbrush | Found beside it |
+   |---|---|---|
+   | Oral-B (`oralb`, `oralb_live`) | `sensor.<brush>_toothbrush_state` | sector, time, battery, pressure, mode, refill days, last session |
+   | Sonicare (`philips_sonicare_ble`) | `sensor.<brush>_handle_state` | sector, brushing time, battery, pressure state, brushing mode, last session |
+   | Laifen (`laifen_ble`) | `sensor.<brush>_status` | timer, battery, pressing too hard, mode |
+   | Xiaomi (`xiaomi_ble`) | `sensor.<brush>_toothbrush` | battery, consumable, score |
 
+   Fill in one of the other fields only when the plugin cannot find that entity: when Home Assistant runs in another
+   language (its entity ids are then in that language), when you renamed an entity, and for a Sonicare's brush head,
+   which is a device of its own (choose its brush head wear). The screen's log lists every entity it follows, with
+   "(found)" beside the ones it found itself.
+
+   Tessera lists every sensor of the house in these fields: it cannot yet offer only the entities of one device.
 3. Apply. The screen builds once.
 4. In Layout, place the **Toothbrush** tile from the library's Plugins group, at any size from 1x1 to 4x4.
 5. In the inspector, check the options: the number of zones (Auto, 4 or 6), the length of your routine, how long the
@@ -51,5 +54,5 @@ After a session the ring stays green for as long as you chose ("Done"), or shows
 
 ## Privacy
 
-It talks to nothing outside your home: the screen reads the eight entities you chose from Home Assistant, over the
-screen's own connection to it.
+It talks to nothing outside your home: the screen reads the toothbrush's entities from Home Assistant (the one you
+chose, the ones it finds beside it and any you name), over the screen's own connection to it.

@@ -1,20 +1,21 @@
-# What tools/preview.py shows (docs/PREVIEW.md): a brush in the middle of a session, at every size the tile offers,
-# with 4 and with 6 zones. The states are the entities plugin.yaml reads (its defaults), as Home Assistant has them.
+# What tools/preview.py shows (docs/PREVIEW.md): an Oral-B in the middle of a session, at every size the tile offers,
+# with 4 and with 6 zones. The toothbrush is plugin.yaml's default, sensor.toothbrush_toothbrush_state, so the plugin
+# finds the brush's other entities as sensor.toothbrush_<reading>, as Home Assistant has them here.
 tiles:
   - tile: brush
     name: Oral-B iO
     options: { zones: "4", routine: 120 }
   - tile: brush
-    name: Sonicare
+    name: Six zones
     options: { zones: "6", routine: 120 }
     sizes: [2x1, 2x2]
 
 states:
-  sensor.toothbrush_state: { state: running }
+  sensor.toothbrush_toothbrush_state: { state: running }
   sensor.toothbrush_sector: { state: sector_3 }
   sensor.toothbrush_time: { state: "72" }
   sensor.toothbrush_battery: { state: "78" }
   sensor.toothbrush_pressure: { state: high }
   sensor.toothbrush_mode: { state: daily_clean }
-  sensor.toothbrush_brush_head: { state: "41" }
+  sensor.toothbrush_refill_days: { state: "41" }
   sensor.toothbrush_last_session: { state: "{now-1d}" }
