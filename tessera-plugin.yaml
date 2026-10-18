@@ -1,0 +1,61 @@
+# The manifest: who made the plugin, what it may do, and what the Tessera app shows. No code and no words: every name,
+# label and hint is a key into translations/<language>.json, part "app". docs/MANIFEST.md has every field.
+#
+# The screen reads the toothbrush's own entities itself: the eight inputs below are chosen when the plugin is added to
+# a screen and become ESPHome homeassistant text sensors in plugin.yaml, as plugins/waste_collection does. Nothing is
+# needed in Home Assistant: no template, no helper, no integration of its own.
+id: toothbrush
+version: 0.1.0
+api: "0.10"
+icon: timer-outline
+maintainer: Heronimonimo
+license: MIT
+stage: beta
+topics: [home]
+requires:
+  esphome: 2026.6.2
+boards: any
+flash_kb: 22
+
+permissions:
+  read_entities: ["{state}", "{sector}", "{time}", "{battery}", "{pressure}", "{mode}", "{head}", "{last}"]
+
+inputs:
+  - { id: state, kind: entity, domains: [sensor, binary_sensor], scope: screen, label: in_state, hint: in_state_hint }
+  - { id: sector, kind: entity, domains: [sensor], scope: screen, label: in_sector, hint: in_sector_hint }
+  - { id: time, kind: entity, domains: [sensor], scope: screen, label: in_time, hint: in_time_hint }
+  - { id: battery, kind: entity, domains: [sensor], scope: screen, label: in_battery, hint: in_battery_hint }
+  - { id: pressure, kind: entity, domains: [sensor, binary_sensor], scope: screen, label: in_pressure, hint: in_pressure_hint }
+  - { id: mode, kind: entity, domains: [sensor, select], scope: screen, label: in_mode, hint: in_mode_hint }
+  - { id: head, kind: entity, domains: [sensor], scope: screen, label: in_head, hint: in_head_hint }
+  - { id: last, kind: entity, domains: [sensor], scope: screen, label: in_last, hint: in_last_hint }
+
+tiles:
+  # The brushing zones as a ring of 4 or 6 arcs (the upper jaw above, the lower jaw below) around the time brushed.
+  # It reads the plugin's own sensors, so it has no entity and no data of its own.
+  - id: brush
+    name: tile_name
+    icon: timer-outline
+    sizes: { min: 1x1, max: 4x4 }
+    memory: 2600
+    example: tile_example
+    options:
+      - id: zones
+        kind: choice
+        default: auto
+        label: opt_zones
+        hint: opt_zones_hint
+        choices: [{ value: auto, label: zones_auto }, { value: "4", label: zones_4 }, { value: "6", label: zones_6 }]
+      - { id: routine, kind: number, min: 60, max: 300, step: 10, unit: s, default: 120, label: opt_routine, hint: opt_routine_hint }
+      - { id: hold, kind: number, min: 0, max: 24, step: 1, unit: h, default: 2, label: opt_hold, hint: opt_hold_hint }
+      - id: head
+        kind: choice
+        default: days
+        label: opt_head
+        hint: opt_head_hint
+        choices: [{ value: days, label: head_days }, { value: percent, label: head_percent }, { value: sessions, label: head_sessions }]
+      - { id: show_name, kind: toggle, default: true, label: opt_show_name }
+
+cards:
+  # The whole session over the page, opened by a tap on the tile: a large ring with the zones named, and every reading.
+  - { id: zones, name: card_name, wide: true }

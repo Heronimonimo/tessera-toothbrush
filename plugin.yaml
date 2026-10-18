@@ -1,0 +1,35 @@
+# What a screen gets when it takes this plugin. Tessera includes this file from the screen's <name>.plugins.yaml with
+# the eight entities chosen when the plugin was added (the manifest's inputs, in capitals), and adds the components
+# folder beside it. An input left empty keeps its default here: an entity no brush has, whose sensor stays unknown,
+# which the plugin reads as "this brush does not report that".
+defaults:
+  STATE: sensor.toothbrush_state
+  SECTOR: sensor.toothbrush_sector
+  TIME: sensor.toothbrush_time
+  BATTERY: sensor.toothbrush_battery
+  PRESSURE: sensor.toothbrush_pressure
+  MODE: sensor.toothbrush_mode
+  HEAD: sensor.toothbrush_brush_head
+  LAST: sensor.toothbrush_last_session
+
+# The brush's entities, straight from Home Assistant as text: a state of any domain arrives as its words ("running",
+# "sector_3", "78", "on"), and the component reads them.
+text_sensor:
+  - { platform: homeassistant, id: toothbrush_state, entity_id: "${STATE}", internal: true }
+  - { platform: homeassistant, id: toothbrush_sector, entity_id: "${SECTOR}", internal: true }
+  - { platform: homeassistant, id: toothbrush_time, entity_id: "${TIME}", internal: true }
+  - { platform: homeassistant, id: toothbrush_battery, entity_id: "${BATTERY}", internal: true }
+  - { platform: homeassistant, id: toothbrush_pressure, entity_id: "${PRESSURE}", internal: true }
+  - { platform: homeassistant, id: toothbrush_mode, entity_id: "${MODE}", internal: true }
+  - { platform: homeassistant, id: toothbrush_head, entity_id: "${HEAD}", internal: true }
+  - { platform: homeassistant, id: toothbrush_last, entity_id: "${LAST}", internal: true }
+
+toothbrush:
+  state: toothbrush_state
+  sector: toothbrush_sector
+  time: toothbrush_time
+  battery: toothbrush_battery
+  pressure: toothbrush_pressure
+  mode: toothbrush_mode
+  head: toothbrush_head
+  last: toothbrush_last
