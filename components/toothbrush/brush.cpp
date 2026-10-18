@@ -347,4 +347,11 @@ const char *Toothbrush::zone_name(int zones, int index) const {
   return text(zones == 6 ? SIX[index] : FOUR[index]);
 }
 
+const char *Toothbrush::side_name(int zones, int index) const {
+  static const char *FOUR[] = {"side_left", "side_right", "side_left", "side_right"};
+  static const char *SIX[] = {"side_left", "side_front", "side_right", "side_right", "side_front", "side_left"};
+  if (index < 0 || index >= zones) return "";
+  return text(zones == 6 ? SIX[index] : FOUR[index]);
+}
+
 }  // namespace esphome::toothbrush

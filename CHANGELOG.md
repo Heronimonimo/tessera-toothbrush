@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.1
+- A wide tile on a small screen shows only the lines that fit: the zone first, then the name, a line of detail and the
+  chips.
+- A small ring shows the timer's icon where a word would not fit.
+- The names around the card's ring are the side alone (Left, Front, Right), and go away where even those would crowd
+  the ring.
+- Tried on the preview bench: the CYD, the Guition 4-inch, the Waveshare 4.3-inch standing up and the Guition 10.1-inch,
+  light and dark, on their own grids and the finest ones.
+
 ## 0.2.0
 - Choose your toothbrush once: pick its main entity, and the plugin finds the brush's other entities itself (Oral-B,
   Sonicare, Laifen and Xiaomi, by their English entity names).

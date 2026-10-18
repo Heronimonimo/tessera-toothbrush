@@ -42,6 +42,16 @@ It works with the toothbrushes Home Assistant knows over Bluetooth: Oral-B (`ora
 
 After a session the ring stays green for as long as you chose ("Done"), or shows how far you got ("Stopped early").
 
+![The plugin on the 10-inch, the 4-inch square and the CYD](store.png)
+
+The full-screen card on a 10-inch screen, in the middle of a six-zone session:
+
+![The card on the Guition 10.1-inch, dark](renders/jc8012p4a1/card-zones-dark.png)
+
+Every tile at every size on every screen, drawn by the real firmware on Tessera's preview bench, is in
+[renders/](renders/) ([overview](renders/overview.png)): one folder per screen, light and dark, with the finest grid of
+each in a folder of its own.
+
 ## Good to know
 
 - The screen reads the brush's entities from Home Assistant itself. Nothing is needed in Home Assistant: no template,
@@ -50,7 +60,8 @@ After a session the ring stays green for as long as you chose ("Done"), or shows
   screen again.
 - A brush without a zone sensor (Xiaomi, Laifen) gets its zones by time, evenly over the routine.
 - Auto zones show 4 until the brush reports a fifth zone; choose 6 for a brush that brushes in six from the start.
-- Tried on: not yet on a real screen. Please say in an issue which board and brush you used.
+- Tried on: Tessera's preview bench (the CYD, the Guition 4-inch, the Waveshare 4.3-inch standing up and the Guition
+  10.1-inch), not yet on a real screen with a real brush. Please say in an issue which board and brush you used.
 
 ## Privacy
 

@@ -65,6 +65,8 @@ class Toothbrush : public Component, public tessera::Plugin {
   std::string last_text() const;
   // The name of a zone in brushing order ("Lower left"), from the screen's texts.
   const char *zone_name(int zones, int index) const;
+  // Its side alone ("Left", "Front"), for the names around the ring, whose half already says which jaw.
+  const char *side_name(int zones, int index) const;
 
   // The options of the tile the card was opened from (a card gets no options of its own).
   Options card_options;

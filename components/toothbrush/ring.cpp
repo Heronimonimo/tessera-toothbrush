@@ -66,19 +66,37 @@ void Ring::set_zones(int zones) {
   int width = std::max(ui::px(4), diameter_ * 7 / 100);
   float radius = diameter_ / 2.0f - width / 2.0f;   // the middle of the arc
 
-  // With names outside the arcs, the ring gives way until each name, a gap away from its arc, stays in the square.
+  // With names outside the arcs (the side of the jaw: the half of the ring says which jaw), the ring gives way until
+  // each name, a gap away from its arc, stays in the square. Where the names would touch each other, or leave the
+  // ring less than 60 % of its square, it goes without: the card's column names the zone brushed now anyway.
   const int gap = ui::px(6), name_h = ui::line_height(Font::BODY);
-  int name_w[6] = {};
-  if (labels_on_) {
+  int name_w[6] = {}, name_x[6] = {}, name_y[6] = {};
+  bool named = labels_on_;
+  if (named) {
+    float r = radius;
     for (int s = 0; s < zones_; ++s) {
-      name_w[s] = ui::text_width(plugin_->zone_name(zones_, index_of(zones_, s)), Font::BODY) + ui::px(2);
+      name_w[s] = ui::text_width(plugin_->side_name(zones_, index_of(zones_, s)), Font::BODY) + ui::px(2);
       const float mid = (180.0f + (s + 0.5f) * slot) * PI / 180.0f;
       const float c = std::fabs(std::cos(mid)), sn = std::fabs(std::sin(mid));
       // The name's middle lies `reach` beyond the arc's middle: half the arc, the gap, and half the name that way.
       const float reach = width / 2.0f + gap + c * name_w[s] / 2.0f + sn * name_h / 2.0f;
-      if (c > 0.01f) radius = std::min(radius, (diameter_ / 2.0f - name_w[s] / 2.0f) / c - reach);
-      if (sn > 0.01f) radius = std::min(radius, (diameter_ / 2.0f - name_h / 2.0f) / sn - reach);
+      if (c > 0.01f) r = std::min(r, (diameter_ / 2.0f - name_w[s] / 2.0f) / c - reach);
+      if (sn > 0.01f) r = std::min(r, (diameter_ / 2.0f - name_h / 2.0f) / sn - reach);
     }
+    for (int s = 0; s < zones_; ++s) {
+      const float mid = (180.0f + (s + 0.5f) * slot) * PI / 180.0f;
+      const float c = std::cos(mid), sn = std::sin(mid);
+      const float reach = r + width / 2.0f + gap + std::fabs(c) * name_w[s] / 2.0f + std::fabs(sn) * name_h / 2.0f;
+      name_x[s] = cx_ + static_cast<int>(c * reach) - name_w[s] / 2;
+      name_y[s] = cy_ + static_cast<int>(sn * reach) - name_h / 2;
+    }
+    for (int a = 0; a < zones_ && named; ++a)
+      for (int b = a + 1; b < zones_; ++b)
+        if (name_x[a] < name_x[b] + name_w[b] + gap && name_x[b] < name_x[a] + name_w[a] + gap &&
+            name_y[a] < name_y[b] + name_h && name_y[b] < name_y[a] + name_h)
+          named = false;
+    if (2 * r + width < diameter_ * 0.6f) named = false;
+    if (named) radius = r;
   }
   radius = std::max(radius, static_cast<float>(width));
 
@@ -100,22 +118,17 @@ void Ring::set_zones(int zones) {
   const int box = static_cast<int>(2 * radius) + width;
   for (int s = 0; s < 6; ++s) {
     show(arcs_[s], s < zones_);
-    show(labels_[s], s < zones_);
+    show(labels_[s], named && s < zones_);
     look_[s] = -1;
     if (s >= zones_) continue;
     lv_obj_set_size(arcs_[s], box, box);
     lv_obj_set_pos(arcs_[s], cx_ - box / 2, cy_ - box / 2);
     lv_obj_set_style_arc_width(arcs_[s], width, LV_PART_MAIN);
     lv_arc_set_bg_angles(arcs_[s], start[s] % 360, end[s] % 360);
-    if (labels_[s]) {
-      const float mid = (180.0f + (s + 0.5f) * slot) * PI / 180.0f;
-      const float c = std::cos(mid), sn = std::sin(mid);
-      const float reach =
-          radius + width / 2.0f + gap + std::fabs(c) * name_w[s] / 2.0f + std::fabs(sn) * name_h / 2.0f;
+    if (labels_[s] && named) {
       lv_obj_set_size(labels_[s], name_w[s], name_h);
-      lv_obj_set_pos(labels_[s], cx_ + static_cast<int>(c * reach) - name_w[s] / 2,
-                     cy_ + static_cast<int>(sn * reach) - name_h / 2);
-      ui::set_text(labels_[s], plugin_->zone_name(zones_, index_of(zones_, s)));
+      lv_obj_set_pos(labels_[s], name_x[s], name_y[s]);
+      ui::set_text(labels_[s], plugin_->side_name(zones_, index_of(zones_, s)));
     }
     colour(s, 0);
   }

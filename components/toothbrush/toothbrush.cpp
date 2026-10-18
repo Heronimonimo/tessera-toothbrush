@@ -21,6 +21,7 @@ static constexpr uint32_t ICON_BATTERY_LEVELS[] = {0xF007A, 0xF007B, 0xF007C, 0x
 static constexpr uint32_t ICON_BATTERY_ALERT = 0xF0083;
 static constexpr uint32_t ICON_BATTERY_CHARGING = 0xF0084;
 static constexpr uint32_t ICON_GAUGE = 0xF029A;
+static constexpr uint32_t ICON_TIMER = 0xF051B;
 
 // ---- Drawing helpers shared by the tile and the card ----
 
@@ -294,9 +295,18 @@ class BrushTile : public tessera::Tile {
     const int room_w = inner * 80 / 100;
     const bool with_small = small_ && !w.small.empty() && inner >= ui::px(90);
     const int small_h = with_small ? ui::line_height(Font::BODY) : 0;
-    const Font face = fit(w.big, room_w, inner * (with_small ? 45 : 60) / 100);
+    // A word ("Ready", "Waiting") the ring has no room for, or one the words beside the ring say already, is the
+    // timer's icon instead: the ring then shows only that it is the toothbrush.
+    const bool beside = zone_ != nullptr;
+    const bool icon = !w.digits && (beside || ui::text_width(w.big, Font::BODY) > room_w);
+    Font face = Font::ICON;
+    if (icon) {
+      if (ui::line_height(Font::ICON) > inner * 60 / 100) face = Font::ICON_SMALL;
+    } else {
+      face = fit(w.big, room_w, inner * (with_small ? 45 : 60) / 100);
+    }
     ui::set_font(big_, face);
-    ui::set_text(big_, w.big);
+    ui::set_text(big_, icon ? ui::icon(ICON_TIMER) : w.big);
     ui::set_color(big_, r.phase == Phase::BRUSHING || r.phase == Phase::RESULT ? theme::INK : theme::MUTED);
     const int big_h = ui::line_height(face);
     const int top = cy_ - (big_h + small_h) / 2;
@@ -312,27 +322,46 @@ class BrushTile : public tessera::Tile {
       }
     }
 
-    // Beside or under the ring: the zone, a line of detail, and the chips.
+    // Beside or under the ring: the zone, a line of detail, and the chips, as many of them as the height holds. The
+    // zone comes first, then the name, a line of detail, the chips, and a second line of detail.
     const int gap = ui::px(8);
     if (zone_) {
+      const int title_h = ui::line_height(Font::TITLE), zone_h = ui::line_height(Font::BODY_LARGE);
+      const int line_h = ui::line_height(Font::BODY), chips_h = chip_line();
+      int room = (layout_ == Layout::WIDE ? h_ : h_ - column_y_) - zone_h;
+      const bool named = name_label_ && layout_ == Layout::WIDE && room >= title_h;
+      if (named) room -= title_h;
+      int lines = room >= line_h && !w.detail.empty() ? 1 : 0;
+      room -= lines * line_h;
+      const bool with_chips = room >= chips_h + gap;
+      if (with_chips) room -= chips_h + gap;
+      if (layout_ == Layout::WIDE && lines && room >= line_h) {
+        lines = 2;
+        room -= line_h;
+      }
       int y = column_y_;
       if (layout_ == Layout::WIDE) {
-        const int block = (name_label_ ? ui::line_height(Font::TITLE) + gap : 0) + ui::line_height(Font::BODY_LARGE) +
-                          2 * ui::line_height(Font::BODY) + chip_line() + 2 * gap;
-        y = std::max(0, (h_ - block) / 2) + (name_label_ ? ui::line_height(Font::TITLE) + gap : 0);
-        if (name_label_) place(name_label_, column_x_, y - ui::line_height(Font::TITLE) - gap);
+        y = std::max(0, room / 2);
+        if (name_label_) {
+          show(name_label_, named);
+          if (named) place(name_label_, column_x_, y);
+        }
+        if (named) y += title_h;
       }
       ui::set_text(zone_, w.zone);
       ui::set_tone(zone_, w.tone, theme::INK);
-      resize(zone_, column_w_, ui::line_height(Font::BODY_LARGE));
+      resize(zone_, column_w_, zone_h);
       place(zone_, column_x_, y);
-      y += ui::line_height(Font::BODY_LARGE);
-      const int lines = layout_ == Layout::WIDE ? 2 : 1;
-      ui::set_text(detail_, w.detail);
-      resize(detail_, column_w_, lines * ui::line_height(Font::BODY));
-      place(detail_, column_x_, y);
-      y += lines * ui::line_height(Font::BODY) + gap;
-      chips(r, column_x_, y, column_w_);
+      y += zone_h;
+      show(detail_, lines > 0);
+      if (lines) {
+        ui::set_text(detail_, w.detail);
+        resize(detail_, column_w_, lines * line_h);
+        place(detail_, column_x_, y);
+        y += lines * line_h;
+      }
+      if (with_chips) chips(r, column_x_, y + gap, column_w_);
+      else chips(r, column_x_, y, 0);   // room 0: every chip hides
     } else if (layout_ == Layout::LARGE) {
       chips(r, 0, chips_y_, w_);
     }

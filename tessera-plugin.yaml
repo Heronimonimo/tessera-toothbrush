@@ -6,7 +6,7 @@
 # integration gives them, and the other inputs, all optional, name one of them instead. Nothing is needed in Home
 # Assistant: no template, no helper, no integration of its own.
 id: toothbrush
-version: 0.2.0
+version: 0.2.1
 api: "0.10"
 icon: timer-outline
 maintainer: Heronimonimo
