@@ -11,8 +11,8 @@ It works with the toothbrushes Home Assistant knows over Bluetooth: Oral-B (`ora
 ## Set up
 
 1. In Tessera, open Plugins, choose **Add with a link** and paste this repository's link.
-2. Tick the screen in the bathroom. Tessera asks for the **Toothbrush**: choose the brush's main entity, and leave the
-   other fields empty. The plugin finds the rest of the brush from it:
+2. Tick the screen in the bathroom. Tessera asks for one thing, the **Toothbrush**: choose the brush's main entity.
+   The plugin finds the rest of the brush from it:
 
    | Brush | Choose as Toothbrush | Found beside it |
    |---|---|---|
@@ -21,15 +21,15 @@ It works with the toothbrushes Home Assistant knows over Bluetooth: Oral-B (`ora
    | Laifen (`laifen_ble`) | `sensor.<brush>_status` | timer, battery, pressing too hard, mode |
    | Xiaomi (`xiaomi_ble`) | `sensor.<brush>_toothbrush` | battery, consumable, score |
 
-   Fill in one of the other fields only when the plugin cannot find that entity: when Home Assistant runs in another
-   language (its entity ids are then in that language), when you renamed an entity, and for a Sonicare's brush head,
-   which is a device of its own (choose its brush head wear). The screen's log lists every entity it follows, with
-   "(found)" beside the ones it found itself.
-
-   Tessera lists every sensor of the house in these fields: it cannot yet offer only the entities of one device.
+   Tessera lists every sensor of the house in that field: it cannot yet offer only the entities of one device.
 3. Apply. The screen builds once.
-4. In Layout, place the **Toothbrush** tile from the library's Plugins group, at any size from 1x1 to 4x4.
-5. In the inspector, check the options: the number of zones (Auto, 4 or 6), the length of your routine, how long the
+4. Only when a reading stays empty: open the plugin's details on the screen's Plugins tab and, under **Settings**, On
+   this screen, type that reading's entity id (such as `sensor.my_brush_sector`). That is for a Home Assistant in
+   another language (its entity ids are then in that language), an entity you renamed, and a Sonicare's brush head,
+   which is a device of its own (its brush head wear). The screen restarts once to follow it; its log lists every
+   entity it follows, with "(found)" beside the ones it found itself.
+5. In Layout, place the **Toothbrush** tile from the library's Plugins group, at any size from 1x1 to 4x4.
+6. In the inspector, check the options: the number of zones (Auto, 4 or 6), the length of your routine, how long the
    result stays, and what the brush head counts (days, percent or sessions).
 
 ## What it shows

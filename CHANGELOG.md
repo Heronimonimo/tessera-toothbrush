@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0
+- One field when you add the plugin: the toothbrush. Tessera asks for every field it shows, so the other seven are
+  gone from there, and the plugin can be applied with the toothbrush alone.
+- Another entity for a reading is now a setting: the plugin's details on the screen's Plugins tab, On this screen.
+  Leave it empty to find it beside the toothbrush; the screen restarts once when you change one.
+- Update: if you filled in the other fields before, fill the same entity ids into the settings.
+
 ## 0.2.1
 - A wide tile on a small screen shows only the lines that fit: the zone first, then the name, a line of detail and the
   chips.

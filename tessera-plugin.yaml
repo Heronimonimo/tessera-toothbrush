@@ -1,12 +1,12 @@
 # The manifest: who made the plugin, what it may do, and what the Tessera app shows. No code and no words: every name,
 # label and hint is a key into translations/<language>.json, part "app". docs/MANIFEST.md has every field.
 #
-# The screen reads the toothbrush's own entities itself. The first input names the brush's main entity, chosen once
+# The screen reads the toothbrush's own entities itself. The one input names the brush's main entity, chosen once
 # when the plugin is added to a screen; the component finds the brush's other entities beside it by the names their
-# integration gives them, and the other inputs, all optional, name one of them instead. Nothing is needed in Home
-# Assistant: no template, no helper, no integration of its own.
+# integration gives them. A setting may name one of them instead (the editor requires every input, so what is optional
+# is a setting). Nothing is needed in Home Assistant: no template, no helper, no integration of its own.
 id: toothbrush
-version: 0.2.1
+version: 0.3.0
 api: "0.10"
 icon: timer-outline
 maintainer: Heronimonimo
@@ -16,29 +16,31 @@ topics: [home]
 requires:
   esphome: 2026.6.2
 boards: any
-flash_kb: 22
+flash_kb: 24
 
 permissions:
-  # The toothbrush entity, the inputs that name another, and the entities of the same brush found beside it by name
-  # (<brush> is the toothbrush entity's id without its integration's word for it; brush.cpp, BRANDS).
-  read_entities: ["{toothbrush}", "{sector}", "{time}", "{battery}", "{pressure}", "{mode}", "{head}", "{last}",
+  # The toothbrush entity, the entities of the same brush found beside it by name (<brush> is the toothbrush entity's
+  # id without its integration's word for it; brush.cpp, BRANDS), and any entity a setting names instead.
+  read_entities: ["{toothbrush}",
                   "sensor.<brush>_sector", "sensor.<brush>_time", "sensor.<brush>_brushing_time", "sensor.<brush>_timer",
                   "sensor.<brush>_battery", "sensor.<brush>_pressure", "sensor.<brush>_pressure_state",
                   "binary_sensor.<brush>_pressing_too_hard", "sensor.<brush>_mode", "sensor.<brush>_brushing_mode",
                   "select.<brush>_mode", "sensor.<brush>_refill_days", "sensor.<brush>_consumable",
-                  "sensor.<brush>_last_session", "sensor.<brush>_score"]
+                  "sensor.<brush>_last_session", "sensor.<brush>_score", "the entity a setting names"]
 
-# Tessera's inputs offer every entity of their domains (an input has no filter by device or integration yet), so the
-# domains are as narrow as the brushes allow, and only the first input is needed.
+# Tessera's inputs offer every entity of their domains (an input has no filter by device or integration yet).
 inputs:
   - { id: toothbrush, kind: entity, domains: [sensor, binary_sensor], scope: screen, label: in_toothbrush, hint: in_toothbrush_hint }
-  - { id: sector, kind: entity, domains: [sensor], scope: screen, label: in_sector, hint: in_override_hint }
-  - { id: time, kind: entity, domains: [sensor], scope: screen, label: in_time, hint: in_override_hint }
-  - { id: battery, kind: entity, domains: [sensor], scope: screen, label: in_battery, hint: in_override_hint }
-  - { id: pressure, kind: entity, domains: [sensor, binary_sensor], scope: screen, label: in_pressure, hint: in_override_hint }
-  - { id: mode, kind: entity, domains: [sensor, select], scope: screen, label: in_mode, hint: in_override_hint }
-  - { id: head, kind: entity, domains: [sensor], scope: screen, label: in_head, hint: in_head_hint }
-  - { id: last, kind: entity, domains: [sensor], scope: screen, label: in_last, hint: in_override_hint }
+
+# Another entity for a reading, empty to find it beside the toothbrush: the text entities of plugin.yaml, by their names.
+settings:
+  - { key: toothbrush_zone_entity, label: set_sector, hint: set_hint }
+  - { key: toothbrush_time_entity, label: set_time, hint: set_hint }
+  - { key: toothbrush_battery_entity, label: set_battery, hint: set_hint }
+  - { key: toothbrush_pressure_entity, label: set_pressure, hint: set_hint }
+  - { key: toothbrush_mode_entity, label: set_mode, hint: set_hint }
+  - { key: toothbrush_brush_head_entity, label: set_head, hint: set_head_hint }
+  - { key: toothbrush_last_session_entity, label: set_last, hint: set_hint }
 
 tiles:
   # The brushing zones as a ring of 4 or 6 arcs (the upper jaw above, the lower jaw below) around the time brushed.

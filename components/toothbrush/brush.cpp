@@ -1,6 +1,7 @@
 // The brush's entities and the session: what the screen reads from Home Assistant, and what it makes of it.
 #include "toothbrush.h"
 #include "esphome/components/api/api_server.h"
+#include "esphome/core/application.h"
 #include "esphome/core/hal.h"
 #include "esphome/core/log.h"
 #include "esphome/core/string_ref.h"
@@ -87,7 +88,26 @@ static void follow(char *entity, char *state, size_t room, bool *heard) {
   });
 }
 
+std::string Toothbrush::entity_of(const text::Text *setting) {
+  if (!setting || !setting->has_state()) return "";
+  std::string id = setting->state;
+  const size_t from = id.find_first_not_of(" \t"), to = id.find_last_not_of(" \t");
+  id = from == std::string::npos ? "" : id.substr(from, to - from + 1);
+  const size_t dot = id.find('.');
+  if (dot == std::string::npos || dot == 0 || dot + 1 >= id.size() || id.size() >= sizeof(Source::entity)) return "";
+  for (char c : id)
+    if (!(std::islower(static_cast<unsigned char>(c)) || std::isdigit(static_cast<unsigned char>(c)) || c == '_' ||
+          c == '.'))
+      return "";
+  return id;
+}
+
 void Toothbrush::subscribe() {
+  // The settings were restored before this (a template text sets itself up first, at the priority of hardware).
+  for (int r = SECTOR; r < ROLES; ++r) {
+    const std::string id = entity_of(overrides_[r]);
+    if (!id.empty()) set_entity(r, id.c_str());
+  }
   find_siblings();
   static const char *const NAMES[] = {"state", "sector", "time", "battery", "pressure", "mode", "head", "last"};
   for (int r = 0; r < ROLES; ++r) {
@@ -193,6 +213,17 @@ int Toothbrush::elapsed(uint32_t now) const {
 }
 
 void Toothbrush::on_interval(uint32_t now) {
+  // A setting that names another entity than the one the screen follows: restart once, so it tells Home Assistant.
+  if (!restarting_)
+    for (int r = SECTOR; r < ROLES; ++r) {
+      const std::string id = entity_of(overrides_[r]);
+      if (id != (chosen_[r] ? sources_[r].entity : "")) {
+        ESP_LOGI(TAG, "A toothbrush setting changed: restarting to follow %s", id.empty() ? "the entity found" : id.c_str());
+        restarting_ = true;
+        App.safe_reboot();
+        return;
+      }
+    }
   const std::string state = value(STATE);
   const bool runs = !missing(state) && brushing(state);
   float t = 0;

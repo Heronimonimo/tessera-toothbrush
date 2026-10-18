@@ -1,7 +1,7 @@
 {
  "plugin": "toothbrush",
- "version": "0.2.0",
- "rendered": "2026-10-18 12:14",
+ "version": "0.3.0",
+ "rendered": "2026-10-18 12:57",
  "adds": {
   "tiles": [
    {
@@ -21,7 +21,15 @@
   "bar_items": [],
   "tap_actions": [],
   "savers": [],
-  "settings_entities": [],
+  "settings_entities": [
+   "toothbrush_zone_entity",
+   "toothbrush_time_entity",
+   "toothbrush_battery_entity",
+   "toothbrush_pressure_entity",
+   "toothbrush_mode_entity",
+   "toothbrush_brush_head_entity",
+   "toothbrush_last_session_entity"
+  ],
   "settings_rows": false,
   "questions": [],
   "actions": [],

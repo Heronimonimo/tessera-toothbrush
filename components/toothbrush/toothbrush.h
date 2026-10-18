@@ -1,5 +1,6 @@
 #pragma once
 #include "esphome/core/component.h"
+#include "esphome/components/text/text.h"
 #include "esphome/components/smart_display/plugin_api.h"
 #include <string>
 
@@ -53,8 +54,15 @@ class Toothbrush : public Component, public tessera::Plugin {
   float get_setup_priority() const override { return setup_priority::DATA; }
   void on_interval(uint32_t now_ms) override;
 
-  // An entity of an input, from plugin.yaml: "" leaves the role to the one found beside the toothbrush entity.
+  // The toothbrush entity, from the input (role STATE), or another role's entity: "" leaves the role to the one found
+  // beside the toothbrush entity.
   void set_entity(uint8_t role, const char *entity_id);
+  // A setting (a text entity of plugin.yaml) that may name a role's entity instead of the one found beside the
+  // toothbrush. It is read in setup(); a change restarts the screen, which tells Home Assistant what it follows only
+  // when it connects.
+  void set_override(uint8_t role, text::Text *setting) {
+    if (role < ROLES) overrides_[role] = setting;
+  }
 
   // Where the brush stands for a tile with these options.
   Reading read(const Options &options) const;
@@ -81,7 +89,11 @@ class Toothbrush : public Component, public tessera::Plugin {
   };
   Source sources_[ROLES];
   Source mode_select_;           // Laifen names its mode twice: a select (preferred) beside the sensor
-  bool chosen_[ROLES] = {};      // the role's entity came from an input, not from the toothbrush's name
+  bool chosen_[ROLES] = {};      // the role's entity came from the input or a setting, not from the toothbrush's name
+  text::Text *overrides_[ROLES] = {};
+  bool restarting_ = false;
+  // A setting's entity id as the screen uses it: trimmed, "" when it is empty or no entity id (domain.object).
+  static std::string entity_of(const text::Text *setting);
 
   // The state of a role: the first of its entities that has a value, else the first that sent anything ("unavailable"),
   // else "".
