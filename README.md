@@ -10,7 +10,8 @@ It works with the toothbrushes Home Assistant knows over Bluetooth: Oral-B (`ora
 
 ## Set up
 
-1. In Tessera, open Plugins, choose **Add with a link** and paste this repository's link.
+1. In Tessera, open Plugins and choose **Toothbrush**, or choose **Add with a link** and paste
+   `https://github.com/Heronimonimo/tessera-toothbrush`.
 2. Tick the screen in the bathroom. Tessera asks for one thing, the **Toothbrush**: choose the brush's main entity.
    The plugin finds the rest of the brush from it:
 
@@ -19,7 +20,7 @@ It works with the toothbrushes Home Assistant knows over Bluetooth: Oral-B (`ora
    | Oral-B (`oralb`, `oralb_live`) | `sensor.<brush>_toothbrush_state` | sector, time, battery, pressure, mode, refill days, last session |
    | Sonicare (`philips_sonicare_ble`) | `sensor.<brush>_handle_state` | sector, brushing time, battery, pressure state, brushing mode, last session |
    | Laifen (`laifen_ble`) | `sensor.<brush>_status` | timer, battery, pressing too hard, mode |
-   | Xiaomi (`xiaomi_ble`) | `sensor.<brush>_toothbrush` | battery, consumable, score |
+   | Xiaomi (`xiaomi_ble`) | `binary_sensor.<brush>_toothbrush` | battery, consumable, score |
 
    Tessera lists every sensor of the house in that field: it cannot yet offer only the entities of one device.
 3. Apply. The screen builds once.
@@ -30,7 +31,7 @@ It works with the toothbrushes Home Assistant knows over Bluetooth: Oral-B (`ora
    entity it follows, with "(found)" beside the ones it found itself.
 5. In Layout, place the **Toothbrush** tile from the library's Plugins group, at any size from 1x1 to 4x4.
 6. In the inspector, check the options: the number of zones (Auto, 4 or 6), the length of your routine, how long the
-   result stays, and what the brush head counts (days, percent or sessions).
+   result stays, what the brush head counts (days, percent or sessions), and whether the tile shows the brush's name.
 
 ## What it shows
 
