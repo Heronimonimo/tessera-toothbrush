@@ -1,10 +1,6 @@
-// The brush's entities and the session: what the screen reads from Home Assistant, and what it makes of it.
+// The brush's states and its session: what the app sends of the brush's entities, and what the plugin makes of it.
 #include "toothbrush.h"
-#include "esphome/components/api/api_server.h"
-#include "esphome/core/application.h"
 #include "esphome/core/hal.h"
-#include "esphome/core/log.h"
-#include "esphome/core/string_ref.h"
 #include <algorithm>
 #include <cctype>
 #include <cmath>
@@ -14,109 +10,17 @@
 
 namespace esphome::toothbrush {
 
-static const char *const TAG = "toothbrush";
+// The tile's options of kind entity, in the order of Role.
+static const char *const ROLE_OPTIONS[ROLES] = {"brush", "sector", "time", "battery", "pressure", "mode", "head", "last"};
 
-// ---- Finding the brush's entities ----
-// A screen cannot ask Home Assistant which entities belong to a device, so the plugin finds them by the names their
-// integration gives them: the toothbrush input names the main entity, its name without the integration's word for it
-// is the device's part of every entity of that brush, and each reading is that part with its own word. These are the
-// English entity ids (an installation in another language names them in its own words: then the inputs name them).
-// The words follow the translation keys the toothbrush card reads (toothbrush-card.js, findDeviceEntities).
-struct Brand {
-  const char *main;              // how the main entity's id ends
-  const char *roles[ROLES];      // each reading's entity, with %s for the device's part; nullptr where it has none
-  const char *mode_select;       // a select of the mode beside the sensor, nullptr for none
-};
-
-static const Brand BRANDS[] = {
-    // Oral-B, built in (oralb) and Oral-B Live (oralb_live, the same keys plus the brush head and the last session).
-    {"_toothbrush_state",
-     {nullptr, "sensor.%s_sector", "sensor.%s_time", "sensor.%s_battery", "sensor.%s_pressure", "sensor.%s_mode",
-      "sensor.%s_refill_days", "sensor.%s_last_session"},
-     nullptr},
-    // Philips Sonicare (philips_sonicare_ble). Its brush head is a device of its own: the input names it.
-    {"_handle_state",
-     {nullptr, "sensor.%s_sector", "sensor.%s_brushing_time", "sensor.%s_battery", "sensor.%s_pressure_state",
-      "sensor.%s_brushing_mode", nullptr, "sensor.%s_last_session"},
-     nullptr},
-    // Laifen (laifen_ble): no sectors, so the zones go by time.
-    {"_status",
-     {nullptr, nullptr, "sensor.%s_timer", "sensor.%s_battery", "binary_sensor.%s_pressing_too_hard",
-      "sensor.%s_mode", nullptr, nullptr},
-     "select.%s_mode"},
-    // Xiaomi (xiaomi_ble): no live time and no sectors; its consumable is the percent left, its score the last result.
-    {"_toothbrush",
-     {nullptr, nullptr, nullptr, "sensor.%s_battery", nullptr, nullptr, "sensor.%s_consumable", "sensor.%s_score"},
-     nullptr},
-};
-
-static bool ends_with(const char *text, const char *end) {
-  const size_t n = strlen(text), m = strlen(end);
-  return n > m && !strcmp(text + n - m, end);
-}
-
-void Toothbrush::set_entity(uint8_t role, const char *entity_id) {
-  if (role >= ROLES || !entity_id) return;
-  snprintf(sources_[role].entity, sizeof sources_[role].entity, "%s", entity_id);
-  chosen_[role] = *entity_id != '\0';
-}
-
-void Toothbrush::find_siblings() {
-  const char *dot = strchr(sources_[STATE].entity, '.');
-  if (!dot) return;
-  const char *object = dot + 1;
-  for (const Brand &brand : BRANDS) {
-    if (!ends_with(object, brand.main)) continue;
-    char device[80];
-    snprintf(device, sizeof device, "%.*s", static_cast<int>(strlen(object) - strlen(brand.main)), object);
-    for (int r = SECTOR; r < ROLES; ++r)
-      if (!chosen_[r] && brand.roles[r]) snprintf(sources_[r].entity, sizeof sources_[r].entity, brand.roles[r], device);
-    if (!chosen_[MODE] && brand.mode_select)
-      snprintf(mode_select_.entity, sizeof mode_select_.entity, brand.mode_select, device);
-    return;
-  }
-  ESP_LOGW(TAG, "'%s' is no main entity of a toothbrush integration it knows: only the inputs that name an entity "
-                "are read", sources_[STATE].entity);
-}
-
-static void follow(char *entity, char *state, size_t room, bool *heard) {
-  if (!*entity) return;
-  // The same subscription a homeassistant text sensor makes: Home Assistant sends the state now and at every change.
-  api::global_api_server->subscribe_home_assistant_state(entity, nullptr, [state, room, heard](StringRef value) {
-    snprintf(state, room, "%.*s", static_cast<int>(value.size()), value.c_str());
-    *heard = true;
-  });
-}
-
-std::string Toothbrush::entity_of(const text::Text *setting) {
-  if (!setting || !setting->has_state()) return "";
-  std::string id = setting->state;
-  const size_t from = id.find_first_not_of(" \t"), to = id.find_last_not_of(" \t");
-  id = from == std::string::npos ? "" : id.substr(from, to - from + 1);
-  const size_t dot = id.find('.');
-  if (dot == std::string::npos || dot == 0 || dot + 1 >= id.size() || id.size() >= sizeof(Source::entity)) return "";
-  for (char c : id)
-    if (!(std::islower(static_cast<unsigned char>(c)) || std::isdigit(static_cast<unsigned char>(c)) || c == '_' ||
-          c == '.'))
-      return "";
-  return id;
-}
-
-void Toothbrush::subscribe() {
-  // The settings were restored before this (a template text sets itself up first, at the priority of hardware).
-  for (int r = SECTOR; r < ROLES; ++r) {
-    const std::string id = entity_of(overrides_[r]);
-    if (!id.empty()) set_entity(r, id.c_str());
-  }
-  find_siblings();
-  static const char *const NAMES[] = {"state", "sector", "time", "battery", "pressure", "mode", "head", "last"};
+void Snapshot::read(JsonObjectConst data) {
+  too_large = strcmp(data["wait"] | "", "too_large") == 0;
+  JsonObjectConst entities = data["entities"];
   for (int r = 0; r < ROLES; ++r) {
-    Source &s = sources_[r];
-    if (*s.entity) ESP_LOGCONFIG(TAG, "  %s: %s%s", NAMES[r], s.entity, chosen_[r] ? "" : " (found)");
-    follow(s.entity, s.state, sizeof s.state, &s.heard);
+    JsonObjectConst entity = entities[ROLE_OPTIONS[r]];
+    heard[r] = !entity.isNull();
+    snprintf(state[r], sizeof state[r], "%s", heard[r] ? (entity["state"] | "") : "");
   }
-  if (*mode_select_.entity) ESP_LOGCONFIG(TAG, "  mode: %s (found)", mode_select_.entity);
-  follow(mode_select_.entity, mode_select_.state, sizeof mode_select_.state, &mode_select_.heard);
 }
 
 // ---- Reading the brush's states ----
@@ -133,12 +37,6 @@ static bool missing(const std::string &state) {
   if (state.empty()) return true;
   const std::string low = lower(state);
   return low == "unknown" || low == "unavailable" || low == "none";
-}
-
-std::string Toothbrush::value(Role role) const {
-  if (role == MODE && mode_select_.heard && !missing(mode_select_.state)) return mode_select_.state;
-  const Source &s = sources_[role];
-  return s.heard ? s.state : "";
 }
 
 static bool number_of(const std::string &state, float *out) {
@@ -202,97 +100,109 @@ std::string clock_of(int seconds) {
 
 static int since(uint32_t now, uint32_t then) { return static_cast<int>((now - then) / 1000u); }
 
-// ---- The session, followed every 250 ms ----
+// ---- The session ----
 
-int Toothbrush::elapsed(uint32_t now) const {
+int Session::elapsed(uint32_t now) const {
   // The brush's own count once it reported in this session (with the seconds since, up to two, so the time runs on
   // smoothly between its reports); before that, and for a brush without one (Xiaomi), the time since it began.
-  if (time_value_ >= 0 && static_cast<int32_t>(time_ms_ - started_ms_) >= 0)
-    return time_value_ + std::min(2, since(now, time_ms_));
-  return since(now, started_ms_);
+  if (time_value >= 0 && static_cast<int32_t>(time_ms - started_ms) >= 0)
+    return time_value + std::min(2, since(now, time_ms));
+  return since(now, started_ms);
 }
 
-void Toothbrush::on_interval(uint32_t now) {
-  // A setting that names another entity than the one the screen follows: restart once, so it tells Home Assistant.
-  if (!restarting_)
-    for (int r = SECTOR; r < ROLES; ++r) {
-      const std::string id = entity_of(overrides_[r]);
-      if (id != (chosen_[r] ? sources_[r].entity : "")) {
-        ESP_LOGI(TAG, "A toothbrush setting changed: restarting to follow %s", id.empty() ? "the entity found" : id.c_str());
-        restarting_ = true;
-        App.safe_reboot();
-        return;
-      }
-    }
-  const std::string state = value(STATE);
+void Session::follow(const Snapshot &snap, uint32_t now) {
+  const std::string state = snap.value(STATE);
   const bool runs = !missing(state) && brushing(state);
   float t = 0;
-  const int time_value = number_of(value(TIME), &t) ? static_cast<int>(std::lround(t)) : -1;
-  if (time_value != time_value_) {
-    time_value_ = time_value;
-    time_ms_ = now;
+  const int value = number_of(snap.value(TIME), &t) ? static_cast<int>(std::lround(t)) : -1;
+  if (value != time_value) {
+    time_value = value;
+    time_ms = now;
   }
-  const int raw = sector_of(value(SECTOR));
-  if (raw >= 4) decodes_six_ = true;   // a fifth or sixth sector: the integration names all six itself
-  const bool fresh_sector = raw != raw_;
-  if (fresh_sector) raw_ = raw;
+  const int zone = sector_of(snap.value(SECTOR));
+  if (zone >= 4) decodes_six = true;   // a fifth or sixth sector: the integration names all six itself
+  const bool fresh_sector = zone != raw;
+  if (fresh_sector) raw = zone;
 
-  if (runs && !active_) {
+  if (runs && !active) {
     // A session begins: from scratch, never from the last one's peak.
-    started_ms_ = now;
-    sector_seen_ = false;
-    highest_ = last_raw_ = corrected_ = seen_raw_ = -1;
-    elapsed_ = 0;
-    result_ = false;
+    started_ms = now;
+    sector_seen = false;
+    highest = last_raw = corrected = seen_raw = -1;
+    elapsed_s = 0;
+    result = false;
   }
   if (runs) {
     // A sector left over from the last session counts only once it changes, or when it is the first zone.
-    if (raw >= 0 && (fresh_sector || sector_seen_ || raw == 0)) {
-      sector_seen_ = true;
-      seen_raw_ = raw;
+    if (zone >= 0 && (fresh_sector || sector_seen || zone == 0)) {
+      sector_seen = true;
+      seen_raw = zone;
       // The wrap correction of sector-state.js: the oralb mapping before Home Assistant 2026.8 had no sectors 5 and 6
       // and wrapped back instead, so while brushing a reading that does not pass the highest one is the next zone.
       // The same reading again is the handle repeating itself, not progress.
-      if (raw != last_raw_) {
-        last_raw_ = raw;
-        highest_ = raw > highest_ ? raw : std::min(highest_ + 1, 5);
-        corrected_ = highest_;
+      if (zone != last_raw) {
+        last_raw = zone;
+        highest = zone > highest ? zone : std::min(highest + 1, 5);
+        corrected = highest;
       }
     }
-    elapsed_ = elapsed(now);
-  } else if (active_) {
+    elapsed_s = elapsed(now);
+  } else if (active) {
     // The session ended: keep what it did.
-    result_ = true;
-    result_epoch_ = tessera::epoch();
-    result_ms_ = now;
-    result_seconds_ = elapsed_;
-    result_raw_ = seen_raw_;
-    result_corrected_ = corrected_;
-    result_sector_seen_ = sector_seen_;
+    result = true;
+    result_epoch = tessera::epoch();
+    result_ms = now;
+    result_seconds = elapsed_s;
+    result_raw = seen_raw;
+    result_corrected = corrected;
+    result_sector_seen = sector_seen;
   }
-  active_ = runs;
+  active = runs;
 }
 
-int Toothbrush::zone_index(int zones, int routine, int seconds, bool sector_seen, int raw, int corrected) const {
-  if (sector_seen) {
+int Session::zone_index(int zones, int routine, int seconds, bool seen, int raw_zone, int corrected_zone) const {
+  if (seen) {
     // Six zones from a brush that never named a fifth: the corrected count; otherwise the brush's own word.
-    const int index = zones == 6 && !decodes_six_ ? corrected : raw;
+    const int index = zones == 6 && !decodes_six ? corrected_zone : raw_zone;
     return std::max(0, std::min(index, zones - 1));
   }
   // No sector entity (Xiaomi, Laifen): the zones go by time, evenly over the routine.
   return std::min(zones - 1, std::max(0, seconds) * zones / std::max(1, routine));
 }
 
-Reading Toothbrush::read(const Options &o) const {
+// ---- The plugin ----
+
+Session *Toothbrush::session(const Options &o) {
+  if (!o.brush[0]) return nullptr;
+  for (Session &s : sessions_)
+    if (!strcmp(s.brush, o.brush)) return &s;
+  Session *free = nullptr;
+  for (Session &s : sessions_)
+    if (!s.brush[0]) {
+      free = &s;
+      break;
+    }
+  if (!free) {
+    free = &sessions_[next_];
+    next_ = (next_ + 1) % SESSIONS;
+  }
+  *free = Session();
+  snprintf(free->brush, sizeof free->brush, "%s", o.brush);
+  return free;
+}
+
+Reading Toothbrush::read(const Options &o, const Snapshot &snap) {
   Reading r;
   r.routine = std::max(1, o.routine);
-  r.zones = !strcmp(o.zones, "6") ? 6 : !strcmp(o.zones, "4") ? 4 : decodes_six_ ? 6 : 4;
+  Session *s = session(o);
+  if (!s) return r;   // CHOOSE
+  r.zones = !strcmp(o.zones, "6") ? 6 : !strcmp(o.zones, "4") ? 4 : s->decodes_six ? 6 : 4;
 
-  const std::string state = value(STATE);
+  const std::string state = snap.value(STATE);
   float v = 0;
-  if (number_of(value(BATTERY), &v)) r.battery = std::max(0, std::min(100, static_cast<int>(std::lround(v))));
+  if (number_of(snap.value(BATTERY), &v)) r.battery = std::max(0, std::min(100, static_cast<int>(std::lround(v))));
   if (!missing(state)) r.charging = lower(state).find("charg") != std::string::npos;
-  const std::string pressure = value(PRESSURE);
+  const std::string pressure = snap.value(PRESSURE);
   if (!missing(pressure)) {
     const std::string p = lower(pressure);
     if (p == "on" || p.find("high") != std::string::npos) r.pressure = Pressure::TOO_HIGH;
@@ -301,27 +211,27 @@ Reading Toothbrush::read(const Options &o) const {
   }
 
   const uint32_t now = millis();
-  if (active_) {
+  if (s->active) {
     r.phase = Phase::BRUSHING;
-    r.seconds = elapsed(now);
-    r.active = zone_index(r.zones, r.routine, r.seconds, sector_seen_, seen_raw_, corrected_);
+    r.seconds = s->elapsed(now);
+    r.active = s->zone_index(r.zones, r.routine, r.seconds, s->sector_seen, s->seen_raw, s->corrected);
     r.done = r.active;
     return r;
   }
-  if (result_) {
+  if (s->result) {
     const uint32_t clock = tessera::epoch();
     const bool held = o.hold <= 0 ||
-                      (result_epoch_ && clock ? clock - result_epoch_ < static_cast<uint32_t>(o.hold) * 3600u
-                                              : since(now, result_ms_) < o.hold * 3600);
+                      (s->result_epoch && clock ? clock - s->result_epoch < static_cast<uint32_t>(o.hold) * 3600u
+                                                : since(now, s->result_ms) < o.hold * 3600);
     if (held) {
       r.phase = Phase::RESULT;
-      r.seconds = result_seconds_;
-      r.complete = result_seconds_ >= r.routine - 5;
+      r.seconds = s->result_seconds;
+      r.complete = s->result_seconds >= r.routine - 5;
       // The zones before the one it stopped in, or as far as the time went, whichever is further.
-      const int by_zone = result_sector_seen_
-                              ? zone_index(r.zones, r.routine, result_seconds_, true, result_raw_, result_corrected_)
-                              : 0;
-      const int by_time = result_seconds_ * r.zones / r.routine;
+      const int by_zone = s->result_sector_seen ? s->zone_index(r.zones, r.routine, s->result_seconds, true,
+                                                                s->result_raw, s->result_corrected)
+                                                : 0;
+      const int by_time = s->result_seconds * r.zones / r.routine;
       r.done = r.complete ? r.zones : std::min(r.zones, std::max(by_zone, by_time));
       return r;
     }
@@ -331,8 +241,8 @@ Reading Toothbrush::read(const Options &o) const {
   return r;
 }
 
-std::string Toothbrush::mode_text() const {
-  std::string text = value(MODE);
+std::string Toothbrush::mode_text(const Snapshot &snap) const {
+  std::string text = snap.value(MODE);
   if (missing(text)) return "";
   // "daily_clean" as "Daily clean": the integration's own word, readable.
   std::replace(text.begin(), text.end(), '_', ' ');
@@ -340,9 +250,9 @@ std::string Toothbrush::mode_text() const {
   return text;
 }
 
-std::string Toothbrush::head_text(const Options &o, bool *worn) const {
+std::string Toothbrush::head_text(const Snapshot &snap, const Options &o, bool *worn) const {
   *worn = false;
-  const std::string head = value(HEAD);
+  const std::string head = snap.value(HEAD);
   if (missing(head)) return "";
   float v = 0;
   if (!number_of(head, &v)) return head;
@@ -359,8 +269,8 @@ std::string Toothbrush::head_text(const Options &o, bool *worn) const {
   return tessera::format(text("head_days_n"), n);
 }
 
-std::string Toothbrush::last_text() const {
-  const std::string last = value(LAST);
+std::string Toothbrush::last_text(const Snapshot &snap) const {
+  const std::string last = snap.value(LAST);
   if (missing(last)) return "";
   const uint32_t at = moment_of(last);
   if (!at) return last;   // not a moment (Xiaomi's score): as the brush says it

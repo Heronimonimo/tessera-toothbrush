@@ -1,35 +1,3 @@
-# What a screen gets when it takes this plugin. Tessera includes this file from the screen's <name>.plugins.yaml with
-# the toothbrush chosen when the plugin was added (the manifest's input, in capitals), and adds the components folder
-# beside it. The component finds the brush's other entities beside it by their names.
-defaults:
-  TOOTHBRUSH: sensor.toothbrush_toothbrush_state
-
-# Another entity for a reading, when the one found beside the toothbrush has another name (a Home Assistant in another
-# language, a renamed entity, a Sonicare's brush head). Empty: found beside it. They are settings of the screen (the
-# manifest's settings), kept across restarts; the screen restarts once when one changes, since it tells Home Assistant
-# which entities it follows when it connects.
-text:
-  - { platform: template, id: toothbrush_zone_entity, name: "Toothbrush zone entity", optimistic: true,
-      restore_value: true, max_length: 79, mode: text, entity_category: config, icon: "mdi:form-textbox" }
-  - { platform: template, id: toothbrush_time_entity, name: "Toothbrush time entity", optimistic: true,
-      restore_value: true, max_length: 79, mode: text, entity_category: config, icon: "mdi:form-textbox" }
-  - { platform: template, id: toothbrush_battery_entity, name: "Toothbrush battery entity", optimistic: true,
-      restore_value: true, max_length: 79, mode: text, entity_category: config, icon: "mdi:form-textbox" }
-  - { platform: template, id: toothbrush_pressure_entity, name: "Toothbrush pressure entity", optimistic: true,
-      restore_value: true, max_length: 79, mode: text, entity_category: config, icon: "mdi:form-textbox" }
-  - { platform: template, id: toothbrush_mode_entity, name: "Toothbrush mode entity", optimistic: true,
-      restore_value: true, max_length: 79, mode: text, entity_category: config, icon: "mdi:form-textbox" }
-  - { platform: template, id: toothbrush_head_entity, name: "Toothbrush brush head entity", optimistic: true,
-      restore_value: true, max_length: 79, mode: text, entity_category: config, icon: "mdi:form-textbox" }
-  - { platform: template, id: toothbrush_last_entity, name: "Toothbrush last session entity", optimistic: true,
-      restore_value: true, max_length: 79, mode: text, entity_category: config, icon: "mdi:form-textbox" }
-
+# What a screen gets when it takes this plugin: the component. The brush's entities are the tiles' options (kind
+# entity, plugin API 0.15): the app sends their states with each tile's data, so nothing here reads Home Assistant.
 toothbrush:
-  state: "${TOOTHBRUSH}"
-  sector: toothbrush_zone_entity
-  time: toothbrush_time_entity
-  battery: toothbrush_battery_entity
-  pressure: toothbrush_pressure_entity
-  mode: toothbrush_mode_entity
-  head: toothbrush_head_entity
-  last: toothbrush_last_entity

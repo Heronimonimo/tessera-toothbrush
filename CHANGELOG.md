@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0
+- The brush's entities are the tile's options now (plugin API 0.15): choose the toothbrush, and its other entities
+  for the readings you want, in the tile's inspector. Tessera sends them and follows them; another choice needs no
+  build and no restart.
+- Each tile has its own brush, so one screen can show several.
+- Needs a Tessera with plugin API 0.15 (its dev branch until the next release).
+- Update: the toothbrush input and the entity settings are gone; choose the same entities in each tile's options.
+
 ## 0.3.0
 - One field when you add the plugin: the toothbrush. Tessera asks for every field it shows, so the other seven are
   gone from there, and the plugin can be applied with the toothbrush alone.

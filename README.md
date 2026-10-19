@@ -10,28 +10,27 @@ It works with the toothbrushes Home Assistant knows over Bluetooth: Oral-B (`ora
 
 ## Set up
 
-1. In Tessera, open Plugins and choose **Toothbrush**, or choose **Add with a link** and paste
-   `https://github.com/Heronimonimo/tessera-toothbrush`.
-2. Tick the screen in the bathroom. Tessera asks for one thing, the **Toothbrush**: choose the brush's main entity.
-   The plugin finds the rest of the brush from it:
+It needs a Tessera with plugin API 0.15: Tessera's dev branch until its next release.
 
-   | Brush | Choose as Toothbrush | Found beside it |
-   |---|---|---|
-   | Oral-B (`oralb`, `oralb_live`) | `sensor.<brush>_toothbrush_state` | sector, time, battery, pressure, mode, refill days, last session |
-   | Sonicare (`philips_sonicare_ble`) | `sensor.<brush>_handle_state` | sector, brushing time, battery, pressure state, brushing mode, last session |
-   | Laifen (`laifen_ble`) | `sensor.<brush>_status` | timer, battery, pressing too hard, mode |
-   | Xiaomi (`xiaomi_ble`) | `binary_sensor.<brush>_toothbrush` | battery, consumable, score |
+1. In Tessera, open Plugins, choose **Add with a link** and paste this repository's link.
+2. Tick the screen in the bathroom and apply. The screen builds once.
+3. In Layout, place the **Toothbrush** tile from the library's Plugins group, at any size from 1x1 to 4x4.
+4. In the inspector, choose the brush's entities. Only **Toothbrush** is needed; each other one adds its reading:
 
-   Tessera lists every sensor of the house in that field: it cannot yet offer only the entities of one device.
-3. Apply. The screen builds once.
-4. Only when a reading stays empty: open the plugin's details on the screen's Plugins tab and, under **Settings**, On
-   this screen, type that reading's entity id (such as `sensor.my_brush_sector`). That is for a Home Assistant in
-   another language (its entity ids are then in that language), an entity you renamed, and a Sonicare's brush head,
-   which is a device of its own (its brush head wear). The screen restarts once to follow it; its log lists every
-   entity it follows, with "(found)" beside the ones it found itself.
-5. In Layout, place the **Toothbrush** tile from the library's Plugins group, at any size from 1x1 to 4x4.
-6. In the inspector, check the options: the number of zones (Auto, 4 or 6), the length of your routine, how long the
-   result stays, what the brush head counts (days, percent or sessions), and whether the tile shows the brush's name.
+   | Option | Oral-B (`oralb`, `oralb_live`) | Sonicare (`philips_sonicare_ble`) | Laifen (`laifen_ble`) | Xiaomi (`xiaomi_ble`) |
+   |---|---|---|---|---|
+   | Toothbrush | `…_toothbrush_state` | `…_handle_state` | `…_status` | `…_toothbrush` |
+   | Zone | `…_sector` | `…_sector` | leave empty | leave empty |
+   | Brushing time | `…_time` | `…_brushing_time` | `…_timer` | leave empty |
+   | Battery | `…_battery` | `…_battery` | `…_battery` | `…_battery` |
+   | Pressure | `…_pressure` | `…_pressure_state` | `…_pressing_too_hard` | leave empty |
+   | Mode | `…_mode` | `…_brushing_mode` | `…_mode` | leave empty |
+   | Brush head | `…_refill_days` | brush head wear (its brush head device) | leave empty | `…_consumable` |
+   | Last session | `…_last_session` | `…_last_session` | leave empty | `…_score` |
+
+   The lists are searchable: type the brush's name. Another choice shows at once, without a build.
+5. Check the other options: the number of zones (Auto, 4 or 6), the length of your routine, how long the result
+   stays, and what the brush head counts (days, percent or sessions).
 
 ## What it shows
 
@@ -55,10 +54,9 @@ each in a folder of its own.
 
 ## Good to know
 
-- The screen reads the brush's entities from Home Assistant itself. Nothing is needed in Home Assistant: no template,
-  no helper, no integration of its own.
-- The entities are chosen per screen when it is built, so a screen shows one brush. Choosing another brush builds the
-  screen again.
+- Tessera sends the entities you choose to the screen and follows them. Nothing is needed in Home Assistant: no
+  template, no helper, no integration of its own.
+- Each tile has its own brush, so a screen can show several: one tile each.
 - A brush without a zone sensor (Xiaomi, Laifen) gets its zones by time, evenly over the routine.
 - Auto zones show 4 until the brush reports a fifth zone; choose 6 for a brush that brushes in six from the start.
 - Tried on: Tessera's preview bench (the CYD, the Guition 4-inch, the Waveshare 4.3-inch standing up and the Guition
@@ -66,5 +64,5 @@ each in a folder of its own.
 
 ## Privacy
 
-It talks to nothing outside your home: the screen reads the toothbrush's entities from Home Assistant (the one you
-chose, the ones it finds beside it and any you name), over the screen's own connection to it.
+It talks to nothing outside your home: Tessera sends the screen the states of the entities you chose in the tile's
+options, from your Home Assistant.

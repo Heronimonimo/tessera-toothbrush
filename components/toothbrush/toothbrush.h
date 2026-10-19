@@ -1,6 +1,5 @@
 #pragma once
 #include "esphome/core/component.h"
-#include "esphome/components/text/text.h"
 #include "esphome/components/smart_display/plugin_api.h"
 #include <string>
 
@@ -8,7 +7,8 @@ namespace esphome::toothbrush {
 
 // Where a brush stands now, for one tile's options: what its ring and its words show.
 enum class Phase : uint8_t {
-  WAITING,   // no state from Home Assistant yet (or the toothbrush input points at nothing)
+  CHOOSE,    // no toothbrush chosen in the tile's options yet
+  WAITING,   // chosen, but no state from Home Assistant yet
   OFFLINE,   // the brush is out of reach (unavailable)
   IDLE,      // nothing to show but the readings
   BRUSHING,  // a session runs
@@ -17,7 +17,7 @@ enum class Phase : uint8_t {
 enum class Pressure : uint8_t { UNKNOWN, NORMAL, TOO_HIGH, TOO_LOW };
 
 struct Reading {
-  Phase phase = Phase::WAITING;
+  Phase phase = Phase::CHOOSE;
   int zones = 4;         // 4 or 6
   int active = -1;       // the zone brushed now, in brushing order (0 is the first); -1 for none
   int done = 0;          // how many zones, in brushing order, are done
@@ -29,48 +29,75 @@ struct Reading {
   Pressure pressure = Pressure::UNKNOWN;
 };
 
+// What the plugin reads of the brush: one option of kind entity each, by these ids (the manifest's tile options).
+enum Role : uint8_t { STATE, SECTOR, TIME, BATTERY, PRESSURE, MODE, HEAD, LAST, ROLES };
+
 // The options of a tile, as the card needs them too.
 struct Options {
+  char brush[80] = "";      // the toothbrush entity chosen, "" for none
   char zones[8] = "auto";   // auto, 4 or 6
   int routine = 120;        // seconds
   int hold = 2;             // hours a result stays; 0 until the next session
   char head[12] = "days";   // days, percent or sessions
-  bool show_name = true;
 };
 
-// What the plugin reads of the brush, one entity each (the manifest's inputs, in this order).
-enum Role : uint8_t { STATE, SECTOR, TIME, BATTERY, PRESSURE, MODE, HEAD, LAST, ROLES };
+// The brush's entities as the app last sent them with the tile's data (`entities`, plugin API 0.15). Fixed fields: a
+// tile and a card are made in PSRAM, so this is there too.
+struct Snapshot {
+  char state[ROLES][48] = {};
+  bool heard[ROLES] = {};
+  bool too_large = false;   // the app could not send them in the tile's 2.6 KB
+  void read(JsonObjectConst data);
+  // A role's state, "" when its option was left empty or nothing came yet.
+  std::string value(Role role) const { return heard[role] ? state[role] : ""; }
+};
+
+// A brush's session, followed from the states the app sends: kept by the plugin, by toothbrush entity, so a tile made
+// again (a page coming back on the CYD), another tile of the same brush and the card all show the same session.
+struct Session {
+  char brush[80] = "";
+  bool active = false;          // a session runs
+  uint32_t started_ms = 0;      // when it began, by millis()
+  int time_value = -1;          // the last reading of the time entity, -1 for none
+  uint32_t time_ms = 0;         // when that reading came
+  bool sector_seen = false;     // the sector entity reported a zone in this session
+  bool decodes_six = false;     // the brush has reported a sector above 4: it names all six itself
+  int raw = -1;                 // the last zone the brush reported, 0-based (-1 while it names none)
+  int seen_raw = -1;            // the last zone it reported in this session, kept while it names none
+  int highest = -1, last_raw = -1, corrected = -1;   // the wrap correction (sector-state.js)
+  int elapsed_s = 0;            // seconds brushed, as last followed
+  bool result = false;          // a session ended and its result is kept
+  uint32_t result_epoch = 0;    // when it ended, on the screen's clock (0 when the clock was not set)
+  uint32_t result_ms = 0;       // the same by millis()
+  int result_seconds = 0;
+  int result_raw = -1, result_corrected = -1;
+  bool result_sector_seen = false;
+
+  // Take in the states of a snapshot: a session that begins, a zone, the time, a session that ends.
+  void follow(const Snapshot &snap, uint32_t now_ms);
+  int elapsed(uint32_t now_ms) const;
+  int zone_index(int zones, int routine, int seconds, bool seen, int raw_zone, int corrected_zone) const;
+};
 
 // "1:12": minutes and seconds.
 std::string clock_of(int seconds);
 
-// The plugin: a tile ("brush") and a card ("zones"). It reads the brush's entities from Home Assistant itself: the
-// toothbrush input names the brush's main entity, and the other entities of the same device are found by the names
-// their integration gives them, unless an input names one of them. It follows the session itself, so the tile and the
-// card only paint what it knows, and a tile made again (a page coming back on the CYD) picks up where it stands.
+// The plugin: a tile ("brush") and a card ("zones"). A tile's options name the brush's entities (kind entity, plugin
+// API 0.15): the app sends their states with the tile's data and follows them, and another choice needs no build.
 class Toothbrush : public Component, public tessera::Plugin {
  public:
   void setup() override;
   float get_setup_priority() const override { return setup_priority::DATA; }
-  void on_interval(uint32_t now_ms) override;
 
-  // The toothbrush entity, from the input (role STATE), or another role's entity: "" leaves the role to the one found
-  // beside the toothbrush entity.
-  void set_entity(uint8_t role, const char *entity_id);
-  // A setting (a text entity of plugin.yaml) that may name a role's entity instead of the one found beside the
-  // toothbrush. It is read in setup(); a change restarts the screen, which tells Home Assistant what it follows only
-  // when it connects.
-  void set_override(uint8_t role, text::Text *setting) {
-    if (role < ROLES) overrides_[role] = setting;
-  }
-
-  // Where the brush stands for a tile with these options.
-  Reading read(const Options &options) const;
+  // The session of a tile's brush, made the first time a brush is seen (the oldest of four gives way).
+  Session *session(const Options &options);
+  // Where the brush stands for a tile with these options and these states.
+  Reading read(const Options &options, const Snapshot &snap);
   // The words of the readings, "" for none: the mode ("Daily clean"), the brush head ("41 days") and whether it is
   // nearly worn, and the last session ("Today 07:12").
-  std::string mode_text() const;
-  std::string head_text(const Options &options, bool *worn) const;
-  std::string last_text() const;
+  std::string mode_text(const Snapshot &snap) const;
+  std::string head_text(const Snapshot &snap, const Options &options, bool *worn) const;
+  std::string last_text(const Snapshot &snap) const;
   // The name of a zone in brushing order ("Lower left"), from the screen's texts.
   const char *zone_name(int zones, int index) const;
   // Its side alone ("Left", "Front"), for the names around the ring, whose half already says which jaw.
@@ -80,49 +107,9 @@ class Toothbrush : public Component, public tessera::Plugin {
   Options card_options;
 
  protected:
-  // An entity the screen follows, and its last state as Home Assistant sent it. Fixed fields, in the component's own
-  // memory: about 1.2 KB for all of them.
-  struct Source {
-    char entity[80] = "";
-    char state[48] = "";
-    bool heard = false;
-  };
-  Source sources_[ROLES];
-  Source mode_select_;           // Laifen names its mode twice: a select (preferred) beside the sensor
-  bool chosen_[ROLES] = {};      // the role's entity came from the input or a setting, not from the toothbrush's name
-  text::Text *overrides_[ROLES] = {};
-  bool restarting_ = false;
-  // A setting's entity id as the screen uses it: trimmed, "" when it is empty or no entity id (domain.object).
-  static std::string entity_of(const text::Text *setting);
-
-  // The state of a role: the first of its entities that has a value, else the first that sent anything ("unavailable"),
-  // else "".
-  std::string value(Role role) const;
-  // Find the entities the inputs leave open, and follow every one (in setup(), before Home Assistant connects).
-  void find_siblings();
-  void subscribe();
-
-  // The session, followed every 250 ms.
-  bool active_ = false;          // a session runs
-  uint32_t started_ms_ = 0;      // when it began, by millis()
-  int time_value_ = -1;          // the last reading of the time entity, -1 for none
-  uint32_t time_ms_ = 0;         // when that reading came
-  bool sector_seen_ = false;     // the sector entity reported a zone in this session
-  bool decodes_six_ = false;     // the brush has reported a sector above 4: it names all six itself
-  int raw_ = -1;                 // the last zone the brush reported, 0-based (-1 while it names none)
-  int seen_raw_ = -1;            // the last zone it reported in this session, kept while it names none
-  int highest_ = -1, last_raw_ = -1, corrected_ = -1;   // the wrap correction (sector-state.js)
-  int elapsed_ = 0;              // seconds brushed, as last followed
-
-  bool result_ = false;          // a session ended and its result is kept
-  uint32_t result_epoch_ = 0;    // when it ended, on the screen's clock (0 when the clock was not set)
-  uint32_t result_ms_ = 0;       // the same by millis()
-  int result_seconds_ = 0;
-  int result_raw_ = -1, result_corrected_ = -1;
-  bool result_sector_seen_ = false;
-
-  int elapsed(uint32_t now_ms) const;
-  int zone_index(int zones, int routine, int seconds, bool sector_seen, int raw, int corrected) const;
+  static constexpr int SESSIONS = 4;
+  Session sessions_[SESSIONS];
+  uint8_t next_ = 0;   // the slot a new brush takes when all are in use
 };
 
 }  // namespace esphome::toothbrush

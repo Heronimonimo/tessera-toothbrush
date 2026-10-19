@@ -1,14 +1,14 @@
 {
  "plugin": "toothbrush",
- "version": "0.3.0",
- "rendered": "2026-10-18 12:57",
+ "version": "0.4.0",
+ "rendered": "2026-10-19 22:05",
  "adds": {
   "tiles": [
    {
     "id": "brush",
     "name": "Toothbrush",
     "sizes": "1x1 to 4x4",
-    "memory": 2600,
+    "memory": 3200,
     "data": "none"
    }
   ],
@@ -21,15 +21,7 @@
   "bar_items": [],
   "tap_actions": [],
   "savers": [],
-  "settings_entities": [
-   "toothbrush_zone_entity",
-   "toothbrush_time_entity",
-   "toothbrush_battery_entity",
-   "toothbrush_pressure_entity",
-   "toothbrush_mode_entity",
-   "toothbrush_brush_head_entity",
-   "toothbrush_last_session_entity"
-  ],
+  "settings_entities": [],
   "settings_rows": false,
   "questions": [],
   "actions": [],
@@ -140,6 +132,32 @@
        ],
        "light": "tile-2-six-zones-2x2-light.png",
        "dark": "tile-2-six-zones-2x2-dark.png"
+      },
+      {
+       "index": 7,
+       "example": "3-not-chosen-yet",
+       "name": "Not chosen yet",
+       "span": "1x1",
+       "size": null,
+       "px": [
+        148,
+        53
+       ],
+       "light": "tile-3-not-chosen-yet-1x1-light.png",
+       "dark": "tile-3-not-chosen-yet-1x1-dark.png"
+      },
+      {
+       "index": 8,
+       "example": "3-not-chosen-yet",
+       "name": "Not chosen yet",
+       "span": "2x1",
+       "size": "wide",
+       "px": [
+        302,
+        53
+       ],
+       "light": "tile-3-not-chosen-yet-2x1-light.png",
+       "dark": "tile-3-not-chosen-yet-2x1-dark.png"
       }
      ],
      "pages": [
@@ -169,6 +187,11 @@
        "page": 5
       },
       {
+       "file": "page-6-light.png",
+       "theme": "light",
+       "page": 6
+      },
+      {
        "file": "page-1-dark.png",
        "theme": "dark",
        "page": 1
@@ -192,6 +215,11 @@
        "file": "page-5-dark.png",
        "theme": "dark",
        "page": 5
+      },
+      {
+       "file": "page-6-dark.png",
+       "theme": "dark",
+       "page": 6
       }
      ],
      "taps": [
@@ -235,6 +263,18 @@
        "file": "tap-2-six-zones-2x2.png",
        "name": "Six zones",
        "span": "2x2",
+       "actions": []
+      },
+      {
+       "file": "tap-3-not-chosen-yet-1x1.png",
+       "name": "Not chosen yet",
+       "span": "1x1",
+       "actions": []
+      },
+      {
+       "file": "tap-3-not-chosen-yet-2x1.png",
+       "name": "Not chosen yet",
+       "span": "2x1",
        "actions": []
       }
      ],
@@ -423,6 +463,32 @@
        ],
        "light": "tile-2-six-zones-2x2-light.png",
        "dark": "tile-2-six-zones-2x2-dark.png"
+      },
+      {
+       "index": 13,
+       "example": "3-not-chosen-yet",
+       "name": "Not chosen yet",
+       "span": "1x1",
+       "size": null,
+       "px": [
+        96,
+        39
+       ],
+       "light": "tile-3-not-chosen-yet-1x1-light.png",
+       "dark": "tile-3-not-chosen-yet-1x1-dark.png"
+      },
+      {
+       "index": 14,
+       "example": "3-not-chosen-yet",
+       "name": "Not chosen yet",
+       "span": "2x1",
+       "size": "wide",
+       "px": [
+        200,
+        38
+       ],
+       "light": "tile-3-not-chosen-yet-2x1-light.png",
+       "dark": "tile-3-not-chosen-yet-2x1-dark.png"
       }
      ],
      "pages": [
@@ -565,6 +631,18 @@
        "name": "Six zones",
        "span": "2x2",
        "actions": []
+      },
+      {
+       "file": "tap-3-not-chosen-yet-1x1.png",
+       "name": "Not chosen yet",
+       "span": "1x1",
+       "actions": []
+      },
+      {
+       "file": "tap-3-not-chosen-yet-2x1.png",
+       "name": "Not chosen yet",
+       "span": "2x1",
+       "actions": []
       }
      ],
      "cards": [
@@ -686,6 +764,32 @@
        ],
        "light": "tile-2-six-zones-2x2-light.png",
        "dark": "tile-2-six-zones-2x2-dark.png"
+      },
+      {
+       "index": 7,
+       "example": "3-not-chosen-yet",
+       "name": "Not chosen yet",
+       "span": "1x1",
+       "size": null,
+       "px": [
+        218,
+        118
+       ],
+       "light": "tile-3-not-chosen-yet-1x1-light.png",
+       "dark": "tile-3-not-chosen-yet-1x1-dark.png"
+      },
+      {
+       "index": 8,
+       "example": "3-not-chosen-yet",
+       "name": "Not chosen yet",
+       "span": "2x1",
+       "size": "wide",
+       "px": [
+        448,
+        118
+       ],
+       "light": "tile-3-not-chosen-yet-2x1-light.png",
+       "dark": "tile-3-not-chosen-yet-2x1-dark.png"
       }
      ],
      "pages": [
@@ -715,6 +819,11 @@
        "page": 5
       },
       {
+       "file": "page-6-light.png",
+       "theme": "light",
+       "page": 6
+      },
+      {
        "file": "page-1-dark.png",
        "theme": "dark",
        "page": 1
@@ -738,6 +847,11 @@
        "file": "page-5-dark.png",
        "theme": "dark",
        "page": 5
+      },
+      {
+       "file": "page-6-dark.png",
+       "theme": "dark",
+       "page": 6
       }
      ],
      "taps": [
@@ -781,6 +895,18 @@
        "file": "tap-2-six-zones-2x2.png",
        "name": "Six zones",
        "span": "2x2",
+       "actions": []
+      },
+      {
+       "file": "tap-3-not-chosen-yet-1x1.png",
+       "name": "Not chosen yet",
+       "span": "1x1",
+       "actions": []
+      },
+      {
+       "file": "tap-3-not-chosen-yet-2x1.png",
+       "name": "Not chosen yet",
+       "span": "2x1",
        "actions": []
       }
      ],
@@ -982,6 +1108,32 @@
        ],
        "light": "tile-2-six-zones-2x2-light.png",
        "dark": "tile-2-six-zones-2x2-dark.png"
+      },
+      {
+       "index": 14,
+       "example": "3-not-chosen-yet",
+       "name": "Not chosen yet",
+       "span": "1x1",
+       "size": null,
+       "px": [
+        141,
+        66
+       ],
+       "light": "tile-3-not-chosen-yet-1x1-light.png",
+       "dark": "tile-3-not-chosen-yet-1x1-dark.png"
+      },
+      {
+       "index": 15,
+       "example": "3-not-chosen-yet",
+       "name": "Not chosen yet",
+       "span": "2x1",
+       "size": "wide",
+       "px": [
+        295,
+        66
+       ],
+       "light": "tile-3-not-chosen-yet-2x1-light.png",
+       "dark": "tile-3-not-chosen-yet-2x1-dark.png"
       }
      ],
      "pages": [
@@ -1130,6 +1282,18 @@
        "name": "Six zones",
        "span": "2x2",
        "actions": []
+      },
+      {
+       "file": "tap-3-not-chosen-yet-1x1.png",
+       "name": "Not chosen yet",
+       "span": "1x1",
+       "actions": []
+      },
+      {
+       "file": "tap-3-not-chosen-yet-2x1.png",
+       "name": "Not chosen yet",
+       "span": "2x1",
+       "actions": []
       }
      ],
      "cards": [
@@ -1199,6 +1363,19 @@
        ],
        "light": "tile-1-oral-b-io-1x3-light.png",
        "dark": "tile-1-oral-b-io-1x3-dark.png"
+      },
+      {
+       "index": 3,
+       "example": "3-not-chosen-yet",
+       "name": "Not chosen yet",
+       "span": "1x1",
+       "size": null,
+       "px": [
+        448,
+        159
+       ],
+       "light": "tile-3-not-chosen-yet-1x1-light.png",
+       "dark": "tile-3-not-chosen-yet-1x1-dark.png"
       }
      ],
      "pages": [
@@ -1240,6 +1417,12 @@
        "file": "tap-1-oral-b-io-1x3.png",
        "name": "Oral-B iO",
        "span": "1x3",
+       "actions": []
+      },
+      {
+       "file": "tap-3-not-chosen-yet-1x1.png",
+       "name": "Not chosen yet",
+       "span": "1x1",
        "actions": []
       }
      ],
@@ -1389,6 +1572,32 @@
        ],
        "light": "tile-2-six-zones-2x2-light.png",
        "dark": "tile-2-six-zones-2x2-dark.png"
+      },
+      {
+       "index": 10,
+       "example": "3-not-chosen-yet",
+       "name": "Not chosen yet",
+       "span": "1x1",
+       "size": null,
+       "px": [
+        218,
+        73
+       ],
+       "light": "tile-3-not-chosen-yet-1x1-light.png",
+       "dark": "tile-3-not-chosen-yet-1x1-dark.png"
+      },
+      {
+       "index": 11,
+       "example": "3-not-chosen-yet",
+       "name": "Not chosen yet",
+       "span": "2x1",
+       "size": "wide",
+       "px": [
+        448,
+        73
+       ],
+       "light": "tile-3-not-chosen-yet-2x1-light.png",
+       "dark": "tile-3-not-chosen-yet-2x1-dark.png"
       }
      ],
      "pages": [
@@ -1492,6 +1701,18 @@
        "file": "tap-2-six-zones-2x2.png",
        "name": "Six zones",
        "span": "2x2",
+       "actions": []
+      },
+      {
+       "file": "tap-3-not-chosen-yet-1x1.png",
+       "name": "Not chosen yet",
+       "span": "1x1",
+       "actions": []
+      },
+      {
+       "file": "tap-3-not-chosen-yet-2x1.png",
+       "name": "Not chosen yet",
+       "span": "2x1",
        "actions": []
       }
      ],
@@ -1757,6 +1978,32 @@
        ],
        "light": "tile-2-six-zones-2x2-light.png",
        "dark": "tile-2-six-zones-2x2-dark.png"
+      },
+      {
+       "index": 18,
+       "example": "3-not-chosen-yet",
+       "name": "Not chosen yet",
+       "span": "1x1",
+       "size": null,
+       "px": [
+        241,
+        133
+       ],
+       "light": "tile-3-not-chosen-yet-1x1-light.png",
+       "dark": "tile-3-not-chosen-yet-1x1-dark.png"
+      },
+      {
+       "index": 19,
+       "example": "3-not-chosen-yet",
+       "name": "Not chosen yet",
+       "span": "2x1",
+       "size": "wide",
+       "px": [
+        494,
+        133
+       ],
+       "light": "tile-3-not-chosen-yet-2x1-light.png",
+       "dark": "tile-3-not-chosen-yet-2x1-dark.png"
       }
      ],
      "pages": [
@@ -1938,6 +2185,18 @@
        "file": "tap-2-six-zones-2x2.png",
        "name": "Six zones",
        "span": "2x2",
+       "actions": []
+      },
+      {
+       "file": "tap-3-not-chosen-yet-1x1.png",
+       "name": "Not chosen yet",
+       "span": "1x1",
+       "actions": []
+      },
+      {
+       "file": "tap-3-not-chosen-yet-2x1.png",
+       "name": "Not chosen yet",
+       "span": "2x1",
        "actions": []
       }
      ],
@@ -2191,6 +2450,32 @@
        ],
        "light": "tile-2-six-zones-2x2-light.png",
        "dark": "tile-2-six-zones-2x2-dark.png"
+      },
+      {
+       "index": 18,
+       "example": "3-not-chosen-yet",
+       "name": "Not chosen yet",
+       "span": "1x1",
+       "size": null,
+       "px": [
+        147,
+        79
+       ],
+       "light": "tile-3-not-chosen-yet-1x1-light.png",
+       "dark": "tile-3-not-chosen-yet-1x1-dark.png"
+      },
+      {
+       "index": 19,
+       "example": "3-not-chosen-yet",
+       "name": "Not chosen yet",
+       "span": "2x1",
+       "size": "wide",
+       "px": [
+        305,
+        79
+       ],
+       "light": "tile-3-not-chosen-yet-2x1-light.png",
+       "dark": "tile-3-not-chosen-yet-2x1-dark.png"
       }
      ],
      "pages": [
@@ -2332,6 +2617,18 @@
        "file": "tap-2-six-zones-2x2.png",
        "name": "Six zones",
        "span": "2x2",
+       "actions": []
+      },
+      {
+       "file": "tap-3-not-chosen-yet-1x1.png",
+       "name": "Not chosen yet",
+       "span": "1x1",
+       "actions": []
+      },
+      {
+       "file": "tap-3-not-chosen-yet-2x1.png",
+       "name": "Not chosen yet",
+       "span": "2x1",
        "actions": []
       }
      ],
@@ -2627,6 +2924,12 @@
    "level": "info",
    "screen": "waveshare43-portrait",
    "where": "Six zones 2x2",
+   "text": "not on a 1 x 4 grid: it does not take that size there, or the pages are full"
+  },
+  {
+   "level": "info",
+   "screen": "waveshare43-portrait",
+   "where": "Not chosen yet 2x1",
    "text": "not on a 1 x 4 grid: it does not take that size there, or the pages are full"
   },
   {

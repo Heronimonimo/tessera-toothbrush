@@ -1,21 +1,34 @@
 # What tools/preview.py shows (docs/PREVIEW.md): an Oral-B in the middle of a session, at every size the tile offers,
-# with 4 and with 6 zones. The toothbrush is plugin.yaml's default, sensor.toothbrush_toothbrush_state, so the plugin
-# finds the brush's other entities as sensor.toothbrush_<reading>, as Home Assistant has them here.
+# with 4 and with 6 zones, its entities chosen in the tile's options (kind entity) as Home Assistant has them here; and
+# a tile whose toothbrush is not chosen yet.
 tiles:
   - tile: brush
     name: Oral-B iO
-    options: { zones: "4", routine: 120 }
+    options: &oralb
+      brush: sensor.oral_b_io_toothbrush_state
+      sector: sensor.oral_b_io_sector
+      time: sensor.oral_b_io_time
+      battery: sensor.oral_b_io_battery
+      pressure: sensor.oral_b_io_pressure
+      mode: sensor.oral_b_io_mode
+      head: sensor.oral_b_io_refill_days
+      last: sensor.oral_b_io_last_session
+      zones: "4"
+      routine: 120
   - tile: brush
     name: Six zones
-    options: { zones: "6", routine: 120 }
+    options: { <<: *oralb, zones: "6" }
     sizes: [2x1, 2x2]
+  - tile: brush
+    name: Not chosen yet
+    sizes: [1x1, 2x1]
 
 states:
-  sensor.toothbrush_toothbrush_state: { state: running }
-  sensor.toothbrush_sector: { state: sector_3 }
-  sensor.toothbrush_time: { state: "72" }
-  sensor.toothbrush_battery: { state: "78" }
-  sensor.toothbrush_pressure: { state: high }
-  sensor.toothbrush_mode: { state: daily_clean }
-  sensor.toothbrush_refill_days: { state: "41" }
-  sensor.toothbrush_last_session: { state: "{now-1d}" }
+  sensor.oral_b_io_toothbrush_state: { state: running }
+  sensor.oral_b_io_sector: { state: sector_3 }
+  sensor.oral_b_io_time: { state: "72" }
+  sensor.oral_b_io_battery: { state: "78" }
+  sensor.oral_b_io_pressure: { state: high }
+  sensor.oral_b_io_mode: { state: daily_clean }
+  sensor.oral_b_io_refill_days: { state: "41" }
+  sensor.oral_b_io_last_session: { state: "{now-1d}" }

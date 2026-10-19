@@ -27,13 +27,14 @@ static constexpr uint32_t ICON_TIMER = 0xF051B;
 
 static Options options_of(JsonObjectConst o) {
   Options x;
+  const char *brush = o["brush"] | "";
+  snprintf(x.brush, sizeof x.brush, "%s", brush);
   const char *zones = o["zones"] | "auto";
   strncpy(x.zones, zones, sizeof x.zones - 1);
   x.routine = o["routine"] | 120;
   x.hold = o["hold"] | 2;
-  const char *head = o["head"] | "days";
+  const char *head = o["head_unit"] | "days";
   strncpy(x.head, head, sizeof x.head - 1);
-  x.show_name = o["show_name"] | true;
   return x;
 }
 
@@ -134,7 +135,7 @@ struct Words {
   bool digits = false;        // `big` is a time
 };
 
-static Words words_of(const Toothbrush *p, const Reading &r) {
+static Words words_of(const Toothbrush *p, const Reading &r, const Snapshot &snap) {
   Words w;
   switch (r.phase) {
     case Phase::BRUSHING: {
@@ -160,15 +161,19 @@ static Words words_of(const Toothbrush *p, const Reading &r) {
     case Phase::IDLE:
       w.big = p->text("ready");
       w.zone = p->text("ready");
-      w.small = w.detail = p->last_text();
+      w.small = w.detail = p->last_text(snap);
       break;
     case Phase::OFFLINE:
       w.big = w.zone = p->text("away");
-      w.small = w.detail = p->last_text();
+      w.small = w.detail = p->last_text(snap);
       break;
-    default:
+    case Phase::WAITING:
       w.big = w.zone = p->text("waiting");
       w.detail = p->text("waiting_hint");
+      break;
+    default:
+      w.big = w.zone = p->text("choose");
+      w.detail = p->text("choose_hint");
       break;
   }
   return w;
@@ -201,7 +206,7 @@ class BrushTile : public tessera::Tile {
               : h_ >= w_ * 3 / 2 ? Layout::TALL
               : std::min(w_, h_) >= ui::px(250) ? Layout::LARGE
                                                  : Layout::SMALL;
-    const bool named = options_.show_name && layout_ != Layout::SMALL;
+    const bool named = layout_ != Layout::SMALL;
     if (named) {
       name_label_ = ui::label(c.parent, Font::TITLE, theme::INK);
       lv_obj_set_size(name_label_, w_, title);
@@ -263,6 +268,12 @@ class BrushTile : public tessera::Tile {
     }
   }
 
+  // The brush's entities, as the app sends them with the tile's data: the session follows them at once.
+  void on_state(JsonObjectConst data) override {
+    snap_.read(data);
+    if (Session *s = plugin_->session(options_)) s->follow(snap_, millis());
+  }
+
   void on_tick(uint32_t) override { paint(); }
 
   void on_theme() override {
@@ -285,10 +296,10 @@ class BrushTile : public tessera::Tile {
 
  private:
   void paint() {
-    const Reading r = plugin_->read(options_);
+    const Reading r = plugin_->read(options_, snap_);
     ring_.set_zones(r.zones);
     ring_.paint(r.active, r.done);
-    const Words w = words_of(plugin_, r);
+    const Words w = words_of(plugin_, r, snap_);
 
     // The middle of the ring: the time (or a word) as large as fits, and under it a line when there is room.
     const int inner = ring_.inner();
@@ -373,11 +384,12 @@ class BrushTile : public tessera::Tile {
     if (used) used += gap;
     const int p = pressure_.put(x + used, y, room - used, ICON_GAUGE, pressure_words(plugin_, r), pressure_tone(r));
     if (p) used += p + gap;
-    if (mode_.words) mode_.put(x + used, y, room - used, 0, plugin_->mode_text(), Tone::NORMAL);
+    if (mode_.words) mode_.put(x + used, y, room - used, 0, plugin_->mode_text(snap_), Tone::NORMAL);
   }
 
   Toothbrush *plugin_;
   Options options_;
+  Snapshot snap_;
   char name_[48] = "";
   Layout layout_ = Layout::SMALL;
   int w_ = 0, h_ = 0, tile_ = -1, cx_ = 0, cy_ = 0;
@@ -453,6 +465,12 @@ class ZonesCard : public tessera::Card {
     }
   }
 
+  // The brush's entities, as the app sends them with the tile's data: the session follows them at once.
+  void on_state(JsonObjectConst data) override {
+    snap_.read(data);
+    if (Session *s = plugin_->session(options_)) s->follow(snap_, millis());
+  }
+
   void on_tick(uint32_t) override { paint(); }
 
   void on_theme() override {
@@ -472,10 +490,10 @@ class ZonesCard : public tessera::Card {
   static constexpr int CELLS = 5;
 
   void paint() {
-    const Reading r = plugin_->read(options_);
+    const Reading r = plugin_->read(options_, snap_);
     ring_.set_zones(r.zones);
     ring_.paint(r.active, r.done);
-    const Words w = words_of(plugin_, r);
+    const Words w = words_of(plugin_, r, snap_);
 
     const int inner = ring_.inner(), room_w = inner * 80 / 100;
     const int small_h = ui::line_height(Font::BODY);
@@ -497,12 +515,12 @@ class ZonesCard : public tessera::Card {
     ui::set_text(detail_, w.detail);
 
     bool worn = false;
-    const std::string head = plugin_->head_text(options_, &worn);
+    const std::string head = plugin_->head_text(snap_, options_, &worn);
     const std::string none = plugin_->text("none");
     const std::string battery = battery_words(plugin_, r);
     const std::string pressure = pressure_words(plugin_, r);
-    const std::string mode = plugin_->mode_text();
-    const std::string last = plugin_->last_text();
+    const std::string mode = plugin_->mode_text(snap_);
+    const std::string last = plugin_->last_text(snap_);
     const std::string *texts[CELLS] = {&battery, &pressure, &mode, &head, &last};
     const Tone tones[CELLS] = {battery_tone(r), pressure_tone(r), Tone::NORMAL, worn ? Tone::BUSY : Tone::NORMAL,
                                Tone::NORMAL};
@@ -515,6 +533,7 @@ class ZonesCard : public tessera::Card {
 
   Toothbrush *plugin_;
   Options options_;
+  Snapshot snap_;
   Ring ring_;
   int cx_ = 0, cy_ = 0;
   lv_obj_t *big_{}, *small_{}, *zone_{}, *detail_{};
@@ -522,7 +541,6 @@ class ZonesCard : public tessera::Card {
 };
 
 void Toothbrush::setup() {
-  subscribe();
   add_tile("brush", [this]() { return new BrushTile(this); });
   add_card("zones", [this]() { return new ZonesCard(this); }, true);
 }
